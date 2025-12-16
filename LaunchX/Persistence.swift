@@ -1,6 +1,6 @@
 //
 //  Persistence.swift
-//  LanuchX
+//  LaunchX
 //
 //  Created by Eric on 2025/12/16.
 //
@@ -32,7 +32,7 @@ struct PersistenceController {
     let container: NSPersistentContainer
 
     init(inMemory: Bool = false) {
-        container = NSPersistentContainer(name: "LanuchX")
+        container = NSPersistentContainer(name: "LaunchX")
         if inMemory {
             container.persistentStoreDescriptions.first!.url = URL(fileURLWithPath: "/dev/null")
         }

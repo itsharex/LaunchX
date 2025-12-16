@@ -12,37 +12,37 @@
 			containerPortal = 075774822EF153E1004AAFF9 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 075774892EF153E1004AAFF9;
-			remoteInfo = LanuchX;
+			remoteInfo = LaunchX;
 		};
 		075774A72EF153E3004AAFF9 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 075774822EF153E1004AAFF9 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 075774892EF153E1004AAFF9;
-			remoteInfo = LanuchX;
+			remoteInfo = LaunchX;
 		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		0757748A2EF153E1004AAFF9 /* LanuchX.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LanuchX.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		0757749C2EF153E3004AAFF9 /* LanuchXTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LanuchXTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		075774A62EF153E3004AAFF9 /* LanuchXUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LanuchXUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		0757748A2EF153E1004AAFF9 /* LaunchX.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LaunchX.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0757749C2EF153E3004AAFF9 /* LaunchXTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LaunchXTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		075774A62EF153E3004AAFF9 /* LaunchXUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LaunchXUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		0757748C2EF153E1004AAFF9 /* LanuchX */ = {
+		0757748C2EF153E1004AAFF9 /* LaunchX */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = LanuchX;
+			path = LaunchX;
 			sourceTree = "<group>";
 		};
-		0757749F2EF153E3004AAFF9 /* LanuchXTests */ = {
+		0757749F2EF153E3004AAFF9 /* LaunchXTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = LanuchXTests;
+			path = LaunchXTests;
 			sourceTree = "<group>";
 		};
-		075774A92EF153E3004AAFF9 /* LanuchXUITests */ = {
+		075774A92EF153E3004AAFF9 /* LaunchXUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = LanuchXUITests;
+			path = LaunchXUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -75,9 +75,9 @@
 		075774812EF153E1004AAFF9 = {
 			isa = PBXGroup;
 			children = (
-				0757748C2EF153E1004AAFF9 /* LanuchX */,
-				0757749F2EF153E3004AAFF9 /* LanuchXTests */,
-				075774A92EF153E3004AAFF9 /* LanuchXUITests */,
+				0757748C2EF153E1004AAFF9 /* LaunchX */,
+				0757749F2EF153E3004AAFF9 /* LaunchXTests */,
+				075774A92EF153E3004AAFF9 /* LaunchXUITests */,
 				0757748B2EF153E1004AAFF9 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -85,9 +85,9 @@
 		0757748B2EF153E1004AAFF9 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				0757748A2EF153E1004AAFF9 /* LanuchX.app */,
-				0757749C2EF153E3004AAFF9 /* LanuchXTests.xctest */,
-				075774A62EF153E3004AAFF9 /* LanuchXUITests.xctest */,
+				0757748A2EF153E1004AAFF9 /* LaunchX.app */,
+				0757749C2EF153E3004AAFF9 /* LaunchXTests.xctest */,
+				075774A62EF153E3004AAFF9 /* LaunchXUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -95,9 +95,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		075774892EF153E1004AAFF9 /* LanuchX */ = {
+		075774892EF153E1004AAFF9 /* LaunchX */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 075774B02EF153E3004AAFF9 /* Build configuration list for PBXNativeTarget "LanuchX" */;
+			buildConfigurationList = 075774B02EF153E3004AAFF9 /* Build configuration list for PBXNativeTarget "LaunchX" */;
 			buildPhases = (
 				075774862EF153E1004AAFF9 /* Sources */,
 				075774872EF153E1004AAFF9 /* Frameworks */,
@@ -108,18 +108,18 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				0757748C2EF153E1004AAFF9 /* LanuchX */,
+				0757748C2EF153E1004AAFF9 /* LaunchX */,
 			);
-			name = LanuchX;
+			name = LaunchX;
 			packageProductDependencies = (
 			);
-			productName = LanuchX;
-			productReference = 0757748A2EF153E1004AAFF9 /* LanuchX.app */;
+			productName = LaunchX;
+			productReference = 0757748A2EF153E1004AAFF9 /* LaunchX.app */;
 			productType = "com.apple.product-type.application";
 		};
-		0757749B2EF153E3004AAFF9 /* LanuchXTests */ = {
+		0757749B2EF153E3004AAFF9 /* LaunchXTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 075774B32EF153E3004AAFF9 /* Build configuration list for PBXNativeTarget "LanuchXTests" */;
+			buildConfigurationList = 075774B32EF153E3004AAFF9 /* Build configuration list for PBXNativeTarget "LaunchXTests" */;
 			buildPhases = (
 				075774982EF153E3004AAFF9 /* Sources */,
 				075774992EF153E3004AAFF9 /* Frameworks */,
@@ -131,18 +131,18 @@
 				0757749E2EF153E3004AAFF9 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				0757749F2EF153E3004AAFF9 /* LanuchXTests */,
+				0757749F2EF153E3004AAFF9 /* LaunchXTests */,
 			);
-			name = LanuchXTests;
+			name = LaunchXTests;
 			packageProductDependencies = (
 			);
-			productName = LanuchXTests;
-			productReference = 0757749C2EF153E3004AAFF9 /* LanuchXTests.xctest */;
+			productName = LaunchXTests;
+			productReference = 0757749C2EF153E3004AAFF9 /* LaunchXTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		075774A52EF153E3004AAFF9 /* LanuchXUITests */ = {
+		075774A52EF153E3004AAFF9 /* LaunchXUITests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 075774B62EF153E3004AAFF9 /* Build configuration list for PBXNativeTarget "LanuchXUITests" */;
+			buildConfigurationList = 075774B62EF153E3004AAFF9 /* Build configuration list for PBXNativeTarget "LaunchXUITests" */;
 			buildPhases = (
 				075774A22EF153E3004AAFF9 /* Sources */,
 				075774A32EF153E3004AAFF9 /* Frameworks */,
@@ -154,13 +154,13 @@
 				075774A82EF153E3004AAFF9 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				075774A92EF153E3004AAFF9 /* LanuchXUITests */,
+				075774A92EF153E3004AAFF9 /* LaunchXUITests */,
 			);
-			name = LanuchXUITests;
+			name = LaunchXUITests;
 			packageProductDependencies = (
 			);
-			productName = LanuchXUITests;
-			productReference = 075774A62EF153E3004AAFF9 /* LanuchXUITests.xctest */;
+			productName = LaunchXUITests;
+			productReference = 075774A62EF153E3004AAFF9 /* LaunchXUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
@@ -186,7 +186,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 075774852EF153E1004AAFF9 /* Build configuration list for PBXProject "LanuchX" */;
+			buildConfigurationList = 075774852EF153E1004AAFF9 /* Build configuration list for PBXProject "LaunchX" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -200,9 +200,9 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				075774892EF153E1004AAFF9 /* LanuchX */,
-				0757749B2EF153E3004AAFF9 /* LanuchXTests */,
-				075774A52EF153E3004AAFF9 /* LanuchXUITests */,
+				075774892EF153E1004AAFF9 /* LaunchX */,
+				0757749B2EF153E3004AAFF9 /* LaunchXTests */,
+				075774A52EF153E3004AAFF9 /* LaunchXUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -258,12 +258,12 @@
 /* Begin PBXTargetDependency section */
 		0757749E2EF153E3004AAFF9 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 075774892EF153E1004AAFF9 /* LanuchX */;
+			target = 075774892EF153E1004AAFF9 /* LaunchX */;
 			targetProxy = 0757749D2EF153E3004AAFF9 /* PBXContainerItemProxy */;
 		};
 		075774A82EF153E3004AAFF9 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 075774892EF153E1004AAFF9 /* LanuchX */;
+			target = 075774892EF153E1004AAFF9 /* LaunchX */;
 			targetProxy = 075774A72EF153E3004AAFF9 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -405,7 +405,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = twotwoba.LanuchX;
+				PRODUCT_BUNDLE_IDENTIFIER = twotwoba.LaunchX;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -435,7 +435,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = twotwoba.LanuchX;
+				PRODUCT_BUNDLE_IDENTIFIER = twotwoba.LaunchX;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -456,14 +456,14 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 15.7;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = twotwoba.LanuchXTests;
+				PRODUCT_BUNDLE_IDENTIFIER = twotwoba.LaunchXTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LanuchX.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/LanuchX";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LaunchX.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/LaunchX";
 			};
 			name = Debug;
 		};
@@ -476,14 +476,14 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 15.7;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = twotwoba.LanuchXTests;
+				PRODUCT_BUNDLE_IDENTIFIER = twotwoba.LaunchXTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LanuchX.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/LanuchX";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LaunchX.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/LaunchX";
 			};
 			name = Release;
 		};
@@ -494,14 +494,14 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = twotwoba.LanuchXUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = twotwoba.LaunchXUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TEST_TARGET_NAME = LanuchX;
+				TEST_TARGET_NAME = LaunchX;
 			};
 			name = Debug;
 		};
@@ -512,21 +512,21 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = twotwoba.LanuchXUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = twotwoba.LaunchXUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TEST_TARGET_NAME = LanuchX;
+				TEST_TARGET_NAME = LaunchX;
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		075774852EF153E1004AAFF9 /* Build configuration list for PBXProject "LanuchX" */ = {
+		075774852EF153E1004AAFF9 /* Build configuration list for PBXProject "LaunchX" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				075774AE2EF153E3004AAFF9 /* Debug */,
@@ -535,7 +535,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		075774B02EF153E3004AAFF9 /* Build configuration list for PBXNativeTarget "LanuchX" */ = {
+		075774B02EF153E3004AAFF9 /* Build configuration list for PBXNativeTarget "LaunchX" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				075774B12EF153E3004AAFF9 /* Debug */,
@@ -544,7 +544,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		075774B32EF153E3004AAFF9 /* Build configuration list for PBXNativeTarget "LanuchXTests" */ = {
+		075774B32EF153E3004AAFF9 /* Build configuration list for PBXNativeTarget "LaunchXTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				075774B42EF153E3004AAFF9 /* Debug */,
@@ -553,7 +553,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		075774B62EF153E3004AAFF9 /* Build configuration list for PBXNativeTarget "LanuchXUITests" */ = {
+		075774B62EF153E3004AAFF9 /* Build configuration list for PBXNativeTarget "LaunchXUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				075774B72EF153E3004AAFF9 /* Debug */,

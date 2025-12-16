@@ -1,13 +1,13 @@
 //
-//  LanuchXUITests.swift
-//  LanuchXUITests
+//  LaunchXUITests.swift
+//  LaunchXUITests
 //
 //  Created by Eric on 2025/12/16.
 //
 
 import XCTest
 
-final class LanuchXUITests: XCTestCase {
+final class LaunchXUITests: XCTestCase {
 
     override func setUpWithError() throws {
         // Put setup code here. This method is called before the invocation of each test method in the class.
