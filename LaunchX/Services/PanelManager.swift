@@ -11,6 +11,7 @@ class PanelManager: NSObject, ObservableObject, NSWindowDelegate {
     let openSettingsPublisher = PassthroughSubject<Void, Never>()
 
     private var panel: FloatingPanel!
+    private var lastShowTime: Date = .distantPast
 
     private override init() {
         super.init()
@@ -53,6 +54,8 @@ class PanelManager: NSObject, ObservableObject, NSWindowDelegate {
     }
 
     func showPanel() {
+        lastShowTime = Date()
+
         // Center on the main screen
         panel.center()
 
@@ -83,6 +86,11 @@ class PanelManager: NSObject, ObservableObject, NSWindowDelegate {
     func windowDidResignKey(_ notification: Notification) {
         // Check if it's our panel
         if let window = notification.object as? NSWindow, window == self.panel {
+            // Ignore resign events that happen immediately after showing (grace period of 0.3s)
+            if Date().timeIntervalSince(lastShowTime) < 0.3 {
+                return
+            }
+
             // Close the panel immediately when it loses focus (e.g. user clicks Settings or Desktop).
             // We do NOT deactivate the app here, because the user might have clicked
             // the Settings window (we want to stay active) or another app (already inactive).

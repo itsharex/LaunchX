@@ -4,11 +4,9 @@ class FloatingPanel: NSPanel {
 
     init(contentRect: NSRect) {
         // Use .borderless for a completely custom appearance without system title bar
-        // .nonactivatingPanel prevents the window from activating the app (making the menu bar change)
-        // effectively unless we explicitly want it to.
         super.init(
             contentRect: contentRect,
-            styleMask: [.borderless, .nonactivatingPanel],
+            styleMask: [.borderless],
             backing: .buffered,
             defer: false)
 

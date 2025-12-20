@@ -5,6 +5,7 @@
 
 TODO LIST:
 
-- [ ] 授权逻辑完善，目前打不开文件
-- [ ] Add support for custom icons
-- [ ] Implement search performance
+- [ ] high - Implement search performance
+- [ ] high - 授权逻辑完善，打开文件操作
+- [ ] low - Add support for custom icons
+- [ ] low - Remove icon visible in dock
