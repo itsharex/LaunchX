@@ -50,9 +50,12 @@ class MetadataQueryService: ObservableObject {
 
             query.searchScopes = config.searchScopes
 
-            // Predicate: public.item, excluding prefpanes
+            // Predicate: Match all items whose content type tree contains 'public.item'
+            // This includes: applications, files, folders, etc.
+            // Using 'CONTAINS' instead of '==' because ContentTypeTree is an array
+            // Exclude system preference panes
             let predicate = NSPredicate(
-                format: "%K == 'public.item' AND %K != 'com.apple.systempreference.prefpane'",
+                format: "%K CONTAINS 'public.item' AND %K != 'com.apple.systempreference.prefpane'",
                 NSMetadataItemContentTypeTreeKey,
                 NSMetadataItemContentTypeKey
             )
