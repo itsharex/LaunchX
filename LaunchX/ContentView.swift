@@ -4,7 +4,6 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var viewModel = SearchViewModel()
-    @FocusState private var isFocused: Bool
     @State private var window: NSWindow?
     @AppStorage("defaultWindowMode") private var windowMode: String = "simple"
     @Environment(\.openSettings) private var openSettings
@@ -27,23 +26,26 @@ struct ContentView: View {
                     .font(.system(size: 22))
                     .foregroundColor(.secondary)
 
-                TextField("LaunchX Search...", text: $viewModel.searchText)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 26, weight: .light))
-                    .disableAutocorrection(true)
-                    .focused($isFocused)
-                    .onSubmit {
+                SearchTextField(
+                    text: $viewModel.searchText,
+                    placeholder: "LaunchX Search...",
+                    onTextChange: { newText in
+                        // Synchronous search on every keystroke
+                        viewModel.performSearch(newText)
+                    },
+                    onSubmit: {
                         viewModel.openSelected()
                     }
-                    // Attach Key Event Monitor
-                    .background(
-                        KeyEventHandler { event in
-                            handleKeyEvent(event)
-                        }
-                    )
+                )
+                .frame(height: 32)
             }
             .padding(20)
-            .frame(height: 80)  // Fix header height to match compact targetHeight
+            .frame(height: 80)
+            .background(
+                KeyEventHandler { event in
+                    handleKeyEvent(event)
+                }
+            )
 
             // Content Section
             // Only show if not in compact mode
@@ -82,17 +84,9 @@ struct ContentView: View {
         }
         // Force focus when window appears
         .onAppear {
-            DispatchQueue.main.async { isFocused = true }
             // Ensure initial size is correct
             if let w = window {
                 resizeWindow(to: targetHeight, for: w)
-            }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) {
-            _ in
-            // Re-focus when window becomes key
-            DispatchQueue.main.async {
-                isFocused = true
             }
         }
         .onReceive(PanelManager.shared.openSettingsPublisher) { _ in

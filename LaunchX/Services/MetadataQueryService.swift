@@ -96,6 +96,77 @@ class MetadataQueryService: ObservableObject {
 
     // MARK: - Search Logic
 
+    /// Synchronous search for immediate results - called on every keystroke
+    /// This must be EXTREMELY fast (< 1ms) to not block typing
+    /// HapiGo-style: pure in-memory query, no I/O, no thread switching
+    func searchSync(text: String) -> [IndexedItem] {
+        guard !text.isEmpty else { return [] }
+
+        let lowerQuery = text.lowercased()
+
+        // 1. Search Apps first (usually small, ~100-500 items)
+        var matchedApps: [IndexedItem] = []
+        matchedApps.reserveCapacity(10)
+
+        for app in appsIndex {
+            // Ultra-fast path: prefix match on lowercase name (pre-computed)
+            if app.lowerName.hasPrefix(lowerQuery) {
+                matchedApps.append(app)
+                if matchedApps.count >= 10 { break }
+                continue
+            }
+            // Fast path: contains match
+            if app.lowerName.contains(lowerQuery) {
+                matchedApps.append(app)
+                if matchedApps.count >= 10 { break }
+            }
+            // NOTE: Pinyin matching disabled in sync search for speed
+        }
+
+        // Sort apps: prefix matches first, then by name length
+        matchedApps.sort { lhs, rhs in
+            let lPrefix = lhs.lowerName.hasPrefix(lowerQuery)
+            let rPrefix = rhs.lowerName.hasPrefix(lowerQuery)
+            if lPrefix && !rPrefix { return true }
+            if !lPrefix && rPrefix { return false }
+            return lhs.name.count < rhs.name.count
+        }
+
+        // 2. Search Files (limit iterations for speed)
+        var matchedFiles: [IndexedItem] = []
+        matchedFiles.reserveCapacity(20)
+
+        let maxFileIterations = min(filesIndex.count, 5000)  // Cap iterations
+        for i in 0..<maxFileIterations {
+            let file = filesIndex[i]
+
+            if file.lowerName.hasPrefix(lowerQuery) {
+                matchedFiles.append(file)
+                if matchedFiles.count >= 20 { break }
+                continue
+            }
+            if file.lowerName.contains(lowerQuery) {
+                matchedFiles.append(file)
+                if matchedFiles.count >= 20 { break }
+            }
+        }
+
+        // Sort files by relevance
+        matchedFiles.sort { lhs, rhs in
+            let lPrefix = lhs.lowerName.hasPrefix(lowerQuery)
+            let rPrefix = rhs.lowerName.hasPrefix(lowerQuery)
+            if lPrefix && !rPrefix { return true }
+            if !lPrefix && rPrefix { return false }
+            return lhs.lastUsed > rhs.lastUsed
+        }
+
+        // Combine: Apps first (max 10), then Files (max 20)
+        let topApps = Array(matchedApps.prefix(10))
+        let topFiles = Array(matchedFiles.prefix(20))
+
+        return topApps + topFiles
+    }
+
     /// Async search with batch processing for responsiveness.
     /// - Parameters:
     ///   - text: The search query.
@@ -163,7 +234,7 @@ class MetadataQueryService: ObservableObject {
 
                 // Usage/Date priority
                 return lhs.lastUsed > rhs.lastUsed
-            }
+            } 
 
             let topApps = Array(sortedApps.prefix(10))
 
@@ -333,6 +404,14 @@ class MetadataQueryService: ObservableObject {
                     print(
                         "MetadataQueryService: Indexing complete. Apps: \(newApps.count), Files: \(newFiles.count)"
                     )
+
+                    // Pre-load icons for apps in background (apps are most frequently accessed)
+                    DispatchQueue.global(qos: .utility).async {
+                        for app in newApps {
+                            app.preloadIcon()
+                        }
+                        print("MetadataQueryService: App icons preloaded")
+                    }
                 }
             }
         }
@@ -352,6 +431,40 @@ final class IndexedItem: Identifiable {
     let isApp: Bool
     let searchableName: CachedSearchableString
 
+    // Pre-cached icon - loaded during indexing, not during display
+    private var _icon: NSImage?
+    private var iconLoaded = false
+    private let iconLock = NSLock()
+
+    var icon: NSImage {
+        iconLock.lock()
+        defer { iconLock.unlock() }
+
+        if !iconLoaded {
+            _icon = NSWorkspace.shared.icon(forFile: path)
+            _icon?.size = NSSize(width: 32, height: 32)
+            iconLoaded = true
+        }
+        return _icon ?? NSImage()
+    }
+
+    // Pre-load icon in background (call this during indexing)
+    func preloadIcon() {
+        iconLock.lock()
+        if iconLoaded {
+            iconLock.unlock()
+            return
+        }
+        iconLock.unlock()
+
+        _icon = NSWorkspace.shared.icon(forFile: path)
+        _icon?.size = NSSize(width: 32, height: 32)
+
+        iconLock.lock()
+        iconLoaded = true
+        iconLock.unlock()
+    }
+
     init(
         name: String, path: String, lastUsed: Date, isDirectory: Bool, isApp: Bool,
         searchableName: CachedSearchableString
@@ -370,7 +483,7 @@ final class IndexedItem: Identifiable {
             id: id,
             name: name,
             path: path,
-            icon: NSWorkspace.shared.icon(forFile: path),
+            icon: icon,  // Use pre-cached icon
             isDirectory: isDirectory
         )
     }

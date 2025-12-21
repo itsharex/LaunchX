@@ -49,37 +49,48 @@ class StringFuzzyMatcher {
 /// It pre-calculates Pinyin to ensure O(1) matching speed during search.
 struct CachedSearchableString {
     let original: String
-    private let pinyin: String
+    let lowerOriginal: String  // Pre-computed lowercase
+    private let pinyinNoSpace: String  // Pre-computed pinyin without spaces
     private let acronym: String
     private let hasPinyin: Bool
 
     init(_ string: String) {
         self.original = string
+        self.lowerOriginal = string.lowercased()
         if string.hasMultiByteCharacters {
-            self.pinyin = string.pinyin.lowercased()
+            let pinyin = string.pinyin.lowercased()
+            self.pinyinNoSpace = pinyin.replacingOccurrences(of: " ", with: "")  // Pre-compute once
             self.acronym = string.pinyinAcronym.lowercased()
             self.hasPinyin = true
         } else {
-            self.pinyin = ""
+            self.pinyinNoSpace = ""
             self.acronym = ""
             self.hasPinyin = false
         }
     }
 
+    /// Fast match - only checks direct string match, no pinyin
+    /// Use this in sync search for maximum speed
+    @inline(__always)
+    func matchesFast(_ lowerQuery: String) -> Bool {
+        return lowerOriginal.contains(lowerQuery)
+    }
+
+    /// Full match including pinyin - slower but more comprehensive
     func matches(_ query: String) -> Bool {
-        // 1. Fast direct match
-        if original.range(of: query, options: .caseInsensitive) != nil { return true }
+        let lowerQuery = query.lowercased()
+
+        // 1. Fast direct match on pre-computed lowercase
+        if lowerOriginal.contains(lowerQuery) { return true }
 
         // If no pinyin was calculated (because it was ASCII target), we are done
         if !hasPinyin { return false }
 
-        let lowerQuery = query.lowercased()
-
         // 2. Check Acronym (e.g. query "wx" matches acronym "wx")
         if acronym.contains(lowerQuery) { return true }
 
-        // 3. Check Full Pinyin (e.g. query "wei" matches pinyin "wei xin")
-        if pinyin.replacingOccurrences(of: " ", with: "").contains(lowerQuery) { return true }
+        // 3. Check Full Pinyin (pre-computed without spaces)
+        if pinyinNoSpace.contains(lowerQuery) { return true }
 
         return false
     }

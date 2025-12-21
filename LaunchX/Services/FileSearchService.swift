@@ -4,33 +4,33 @@ import Foundation
 
 /// Coordinates the high-level search logic, delegating the heavy lifting to MetadataQueryService.
 class FileSearchService: ObservableObject {
-    // Publishes results to the ViewModel
+    // Publishes results to the ViewModel (kept for compatibility)
     let resultsSubject = PassthroughSubject<[SearchResult], Never>()
 
     private let metadataService = MetadataQueryService.shared
 
     init() {
         // Start indexing immediately upon initialization with default config.
-        // In a real app, you might load this config from UserDefaults.
         let config = SearchConfig()
         metadataService.startIndexing(with: config)
     }
 
-    /// Performs an async search via MetadataQueryService
-    func search(query text: String) {
+    /// Performs an async search via MetadataQueryService with completion handler
+    func search(query text: String, completion: @escaping ([SearchResult]) -> Void) {
         guard !text.isEmpty else {
-            resultsSubject.send([])
+            completion([])
             return
         }
 
-        // Delegate to the in-memory index service
-        // The search is performed asynchronously on a background queue,
-        // but the completion handler is called on the Main Thread.
-        metadataService.search(text: text) { [weak self] indexItems in
-            // Map internal IndexItems to UI SearchResults
-            // This happens on the main thread, which is good for creating NSImages (icons).
+        metadataService.search(text: text) { indexItems in
             let results = indexItems.map { $0.toSearchResult() }
+            completion(results)
+        }
+    }
 
+    /// Legacy method for compatibility
+    func search(query text: String) {
+        search(query: text) { [weak self] results in
             self?.resultsSubject.send(results)
         }
     }
