@@ -53,7 +53,7 @@ class MetadataQueryService: ObservableObject {
     private var initialIndexingComplete = false
 
     private init() {
-        // Listen for config changes
+        // Listen for config changes that require reindexing
         configObserver = NotificationCenter.default.addObserver(
             forName: .searchConfigDidChange,
             object: nil,
@@ -61,6 +61,17 @@ class MetadataQueryService: ObservableObject {
         ) { [weak self] notification in
             if let config = notification.object as? SearchConfig {
                 self?.reloadWithConfig(config)
+            }
+        }
+
+        // Listen for config changes that only need config update (no reindexing)
+        NotificationCenter.default.addObserver(
+            forName: .searchConfigDidUpdate,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            if let config = notification.object as? SearchConfig {
+                self?.searchConfig = config
             }
         }
     }

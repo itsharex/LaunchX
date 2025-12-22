@@ -426,6 +426,13 @@ class SearchSettingsViewModel: ObservableObject {
         config.excludedApps = excludedApps
         config.save()
 
+        // Notify MetadataQueryService to update config without reindexing
+        NotificationCenter.default.post(name: .searchConfigDidUpdate, object: config)
+    }
+
+    /// 保存配置并触发重新索引（仅在搜索范围变化时调用）
+    private func saveConfigAndReindex() {
+        saveConfig()
         // Notify MetadataQueryService to reload
         NotificationCenter.default.post(name: .searchConfigDidChange, object: config)
     }
@@ -446,18 +453,18 @@ class SearchSettingsViewModel: ObservableObject {
                     documentScopes.append(path)
                 }
             }
-            saveConfig()
+            saveConfigAndReindex()
         }
     }
 
     func removeDocumentScope(_ scope: String) {
         documentScopes.removeAll { $0 == scope }
-        saveConfig()
+        saveConfigAndReindex()
     }
 
     func resetDocumentScopes() {
         documentScopes = SearchConfig.defaultDocumentScopes
-        saveConfig()
+        saveConfigAndReindex()
     }
 
     func rebuildSpotlightIndex() {
@@ -517,18 +524,18 @@ class SearchSettingsViewModel: ObservableObject {
                     appScopes.append(path)
                 }
             }
-            saveConfig()
+            saveConfigAndReindex()
         }
     }
 
     func removeAppScope(_ scope: String) {
         appScopes.removeAll { $0 == scope }
-        saveConfig()
+        saveConfigAndReindex()
     }
 
     func resetAppScopes() {
         appScopes = SearchConfig.defaultAppScopes
-        saveConfig()
+        saveConfigAndReindex()
     }
 
     // MARK: - Exclusions
@@ -547,13 +554,13 @@ class SearchSettingsViewModel: ObservableObject {
                     excludedPaths.append(path)
                 }
             }
-            saveConfig()
+            saveConfigAndReindex()
         }
     }
 
     func removeExcludedPath(_ path: String) {
         excludedPaths.removeAll { $0 == path }
-        saveConfig()
+        saveConfigAndReindex()
     }
 
     func addExcludedExtension() {
@@ -572,14 +579,14 @@ class SearchSettingsViewModel: ObservableObject {
                 .replacingOccurrences(of: ".", with: "")
             if !ext.isEmpty && !excludedExtensions.contains(ext) {
                 excludedExtensions.append(ext)
-                saveConfig()
+                saveConfigAndReindex()
             }
         }
     }
 
     func removeExcludedExtension(_ ext: String) {
         excludedExtensions.removeAll { $0 == ext }
-        saveConfig()
+        saveConfigAndReindex()
     }
 
     func addExcludedFolderName() {
@@ -597,14 +604,14 @@ class SearchSettingsViewModel: ObservableObject {
             let name = textField.stringValue.trimmingCharacters(in: .whitespaces)
             if !name.isEmpty && !excludedFolderNames.contains(name) {
                 excludedFolderNames.append(name)
-                saveConfig()
+                saveConfigAndReindex()
             }
         }
     }
 
     func removeExcludedFolderName(_ name: String) {
         excludedFolderNames.removeAll { $0 == name }
-        saveConfig()
+        saveConfigAndReindex()
     }
 
     // MARK: - App Exclusions
@@ -615,7 +622,7 @@ class SearchSettingsViewModel: ObservableObject {
         } else {
             excludedApps.insert(appPath)
         }
-        saveConfig()
+        saveConfig()  // APP 排除不需要重新索引，只保存配置即可
     }
 
     func isAppExcluded(_ appPath: String) -> Bool {
@@ -730,6 +737,7 @@ struct AppExclusionsSettingsView: View {
 
 extension Notification.Name {
     static let searchConfigDidChange = Notification.Name("searchConfigDidChange")
+    static let searchConfigDidUpdate = Notification.Name("searchConfigDidUpdate")
 }
 
 #Preview {
