@@ -554,13 +554,13 @@ class SearchSettingsViewModel: ObservableObject {
                     excludedPaths.append(path)
                 }
             }
-            saveConfigAndReindex()
+            saveConfig()  // 排除设置不需要重新索引，搜索时过滤
         }
     }
 
     func removeExcludedPath(_ path: String) {
         excludedPaths.removeAll { $0 == path }
-        saveConfigAndReindex()
+        saveConfig()  // 排除设置不需要重新索引，搜索时过滤
     }
 
     func addExcludedExtension() {
@@ -579,14 +579,14 @@ class SearchSettingsViewModel: ObservableObject {
                 .replacingOccurrences(of: ".", with: "")
             if !ext.isEmpty && !excludedExtensions.contains(ext) {
                 excludedExtensions.append(ext)
-                saveConfigAndReindex()
+                saveConfig()  // 排除设置不需要重新索引，搜索时过滤
             }
         }
     }
 
     func removeExcludedExtension(_ ext: String) {
         excludedExtensions.removeAll { $0 == ext }
-        saveConfigAndReindex()
+        saveConfig()  // 排除设置不需要重新索引，搜索时过滤
     }
 
     func addExcludedFolderName() {
@@ -604,14 +604,14 @@ class SearchSettingsViewModel: ObservableObject {
             let name = textField.stringValue.trimmingCharacters(in: .whitespaces)
             if !name.isEmpty && !excludedFolderNames.contains(name) {
                 excludedFolderNames.append(name)
-                saveConfigAndReindex()
+                saveConfig()  // 排除设置不需要重新索引，搜索时过滤
             }
         }
     }
 
     func removeExcludedFolderName(_ name: String) {
         excludedFolderNames.removeAll { $0 == name }
-        saveConfigAndReindex()
+        saveConfig()  // 排除设置不需要重新索引，搜索时过滤
     }
 
     // MARK: - App Exclusions

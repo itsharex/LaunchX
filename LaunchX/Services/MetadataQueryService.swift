@@ -165,7 +165,12 @@ class MetadataQueryService: ObservableObject {
 
         let lowerQuery = text.lowercased()
         let queryIsAscii = text.isAscii
+
+        // Get exclusion settings for search-time filtering
         let excludedApps = searchConfig.excludedApps
+        let excludedPaths = searchConfig.excludedPaths
+        let excludedExtensions = Set(searchConfig.excludedExtensions)
+        let excludedFolderNames = Set(searchConfig.excludedFolderNames)
 
         // 1. Search Apps first (usually small, ~100-500 items)
         // Use tuple to track match type for sorting
@@ -203,6 +208,22 @@ class MetadataQueryService: ObservableObject {
         let maxFileIterations = min(filesIndex.count, 5000)  // Cap iterations
         for i in 0..<maxFileIterations {
             let file = filesIndex[i]
+
+            // Search-time exclusion filtering
+            // 1. Check excluded paths
+            if excludedPaths.contains(where: { file.path.hasPrefix($0) }) { continue }
+
+            // 2. Check excluded extensions
+            if !excludedExtensions.isEmpty {
+                let ext = (file.path as NSString).pathExtension.lowercased()
+                if excludedExtensions.contains(ext) { continue }
+            }
+
+            // 3. Check excluded folder names
+            if !excludedFolderNames.isEmpty {
+                let pathComponents = file.path.components(separatedBy: "/")
+                if !excludedFolderNames.isDisjoint(with: pathComponents) { continue }
+            }
 
             if let matchType = file.matchesQuery(lowerQuery) {
                 matchedFiles.append((file, matchType))
