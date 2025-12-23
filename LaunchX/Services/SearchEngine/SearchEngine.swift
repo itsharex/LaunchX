@@ -139,8 +139,11 @@ final class SearchEngine: ObservableObject {
         database.deleteAll { [weak self] _ in
             guard let self = self else { return }
 
+            // Get app scopes from config
+            let config = self.searchConfig
+
             // First, quickly scan applications
-            self.indexer.scanApplications { count, path in
+            self.indexer.scanApplications(paths: config.appScopes) { count, path in
                 Task { @MainActor [weak self] in
                     self?.indexProgress = (count, path)
                 }

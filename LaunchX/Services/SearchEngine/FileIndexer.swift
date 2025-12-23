@@ -207,10 +207,9 @@ final class FileIndexer {
     }
 
     /// Scan only application directories (faster for app-only search)
+    /// - Parameter paths: Application directories to scan (from SearchConfig.appScopes)
     func scanApplications(
-        paths: [String] = [
-            "/Applications", "/System/Applications", "/System/Applications/Utilities",
-        ],
+        paths: [String],
         progress: ProgressCallback? = nil,
         completion: CompletionCallback? = nil
     ) {

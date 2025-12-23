@@ -13,8 +13,10 @@ class SearchPanelViewController: NSViewController {
 
     // MARK: - State
     private var results: [SearchResult] = []
+    private var recentApps: [SearchResult] = []  // 最近使用的应用
     private var selectedIndex: Int = 0
     private let searchEngine = SearchEngine.shared
+    private var isShowingRecents: Bool = false  // 是否正在显示最近使用
 
     // MARK: - Constants
     private let rowHeight: CGFloat = 44
@@ -43,6 +45,9 @@ class SearchPanelViewController: NSViewController {
         // SearchEngine handles indexing automatically on init
         // Just trigger a reference to ensure it starts
         _ = searchEngine.isReady
+
+        // 加载最近使用的应用
+        loadRecentApps()
 
         // Register for panel hide callback
         PanelManager.shared.onWillHide = { [weak self] in
@@ -167,8 +172,19 @@ class SearchPanelViewController: NSViewController {
 
     func resetState() {
         searchField.stringValue = ""
-        results = []
         selectedIndex = 0
+
+        // Full 模式下显示最近使用的应用
+        let defaultWindowMode =
+            UserDefaults.standard.string(forKey: "defaultWindowMode") ?? "simple"
+        if defaultWindowMode == "full" && !recentApps.isEmpty {
+            results = recentApps
+            isShowingRecents = true
+        } else {
+            results = []
+            isShowingRecents = false
+        }
+
         tableView.reloadData()
         updateVisibility()
     }
@@ -177,13 +193,25 @@ class SearchPanelViewController: NSViewController {
 
     private func performSearch(_ query: String) {
         guard !query.isEmpty else {
-            results = []
             selectedIndex = 0
+
+            // Full 模式下显示最近使用的应用
+            let defaultWindowMode =
+                UserDefaults.standard.string(forKey: "defaultWindowMode") ?? "simple"
+            if defaultWindowMode == "full" && !recentApps.isEmpty {
+                results = recentApps
+                isShowingRecents = true
+            } else {
+                results = []
+                isShowingRecents = false
+            }
+
             tableView.reloadData()
             updateVisibility()
             return
         }
 
+        isShowingRecents = false
         let searchResults = searchEngine.searchSync(text: query)
         results = searchResults
         selectedIndex = results.isEmpty ? 0 : 0
@@ -200,13 +228,21 @@ class SearchPanelViewController: NSViewController {
     private func updateVisibility() {
         let hasQuery = !searchField.stringValue.isEmpty
         let hasResults = !results.isEmpty
+        let defaultWindowMode =
+            UserDefaults.standard.string(forKey: "defaultWindowMode") ?? "simple"
 
-        divider.isHidden = !hasQuery
+        divider.isHidden = !hasQuery && !isShowingRecents
         scrollView.isHidden = !hasResults
         noResultsLabel.isHidden = !hasQuery || hasResults
 
         // Update window height
-        updateWindowHeight(expanded: hasQuery)
+        if defaultWindowMode == "full" {
+            // Full 模式：始终展开
+            updateWindowHeight(expanded: true)
+        } else {
+            // Simple 模式：有搜索内容且有结果时展开
+            updateWindowHeight(expanded: hasQuery && hasResults)
+        }
     }
 
     private func updateWindowHeight(expanded: Bool) {
@@ -302,7 +338,6 @@ class SearchPanelViewController: NSViewController {
     /// 滚动表格使选中行尽量保持在可视区域中间
     private func scrollToKeepSelectionCentered() {
         let visibleRect = scrollView.contentView.bounds
-        let rowRect = tableView.rect(ofRow: selectedIndex)
 
         // 计算可视区域能显示多少行
         let visibleRows = Int(visibleRect.height / rowHeight)
@@ -311,10 +346,6 @@ class SearchPanelViewController: NSViewController {
         // 计算目标滚动位置，使选中行在中间
         let targetRow = max(0, selectedIndex - middleOffset)
         let targetRect = tableView.rect(ofRow: targetRow)
-
-        // 只有当选中行不在理想位置时才滚动
-        let currentTopRow = Int(visibleRect.origin.y / rowHeight)
-        let idealTopRow = max(0, selectedIndex - middleOffset)
 
         // 如果选中行在前几行，不需要居中（保持在顶部）
         if selectedIndex < middleOffset {
@@ -329,6 +360,91 @@ class SearchPanelViewController: NSViewController {
             scrollView.contentView.scroll(to: NSPoint(x: 0, y: targetRect.origin.y))
             scrollView.reflectScrolledClipView(scrollView.contentView)
         }
+    }
+
+    /// 加载最近使用的应用
+    private func loadRecentApps() {
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            var apps: [SearchResult] = []
+
+            // 获取最近使用的应用（通过 LSCopyApplicationURLsForBundleIdentifier 或扫描常用应用）
+            let commonAppPaths = [
+                "/Applications",
+                "/System/Applications",
+            ]
+
+            // 获取最近打开的应用（通过 NSWorkspace）
+            let runningApps = NSWorkspace.shared.runningApplications
+                .filter { $0.activationPolicy == .regular }
+                .compactMap { $0.bundleURL?.path }
+
+            var addedPaths = Set<String>()
+
+            // 优先添加正在运行的应用
+            for path in runningApps.prefix(8) {
+                guard !addedPaths.contains(path) else { continue }
+                if let result = self?.createSearchResult(from: path) {
+                    apps.append(result)
+                    addedPaths.insert(path)
+                }
+            }
+
+            // 如果不够，补充常用应用
+            if apps.count < 8 {
+                let defaultApps = [
+                    "/System/Applications/Finder.app",
+                    "/Applications/Safari.app",
+                    "/System/Applications/System Preferences.app",
+                    "/System/Applications/System Settings.app",
+                    "/Applications/WeChat.app",
+                    "/System/Applications/Notes.app",
+                    "/System/Applications/Calendar.app",
+                    "/System/Applications/Mail.app",
+                ]
+
+                for path in defaultApps {
+                    guard apps.count < 8 else { break }
+                    guard !addedPaths.contains(path) else { continue }
+                    guard FileManager.default.fileExists(atPath: path) else { continue }
+
+                    if let result = self?.createSearchResult(from: path) {
+                        apps.append(result)
+                        addedPaths.insert(path)
+                    }
+                }
+            }
+
+            DispatchQueue.main.async {
+                self?.recentApps = apps
+
+                // 如果是 Full 模式且当前没有搜索内容，显示最近应用
+                let defaultWindowMode = UserDefaults.standard.string(forKey: "defaultWindowMode") ?? "simple"
+                if defaultWindowMode == "full" && self?.searchField.stringValue.isEmpty == true {
+                    self?.results = apps
+                    self?.isShowingRecents = true
+                    self?.tableView.reloadData()
+                    self?.updateVisibility()
+                }
+            }
+        }
+    }
+
+    /// 从路径创建 SearchResult
+    private func createSearchResult(from path: String) -> SearchResult? {
+        let url = URL(fileURLWithPath: path)
+        guard FileManager.default.fileExists(atPath: path) else { return nil }
+
+        let name = FileManager.default.displayName(atPath: path)
+            .replacingOccurrences(of: ".app", with: "")
+        let icon = NSWorkspace.shared.icon(forFile: path)
+        icon.size = NSSize(width: 32, height: 32)
+
+        return SearchResult(
+            name: name,
+            path: path,
+            icon: icon,
+            isDirectory: true
+        )
     }
 
     private func openSelected() {
