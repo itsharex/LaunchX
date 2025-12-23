@@ -376,13 +376,16 @@ class SearchSettingsViewModel: ObservableObject {
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             var apps: [AppInfo] = []
 
-            // 扫描应用目录
-            let appDirectories = [
-                "/Applications",
-                "/System/Applications",
-                "/System/Applications/Utilities",
-                NSHomeDirectory() + "/Applications",
-            ]
+            // 使用配置中的应用搜索范围，保持与搜索一致
+            var appDirectories = self?.config.appScopes ?? []
+
+            // 添加用户应用目录
+            let userApps = NSHomeDirectory() + "/Applications"
+            if FileManager.default.fileExists(atPath: userApps)
+                && !appDirectories.contains(userApps)
+            {
+                appDirectories.append(userApps)
+            }
 
             for directory in appDirectories {
                 let url = URL(fileURLWithPath: directory)
@@ -713,7 +716,12 @@ struct AppExclusionsSettingsView: View {
             return viewModel.allApps
         }
         return viewModel.allApps.filter {
+            // 支持按显示名搜索（如"备忘录"）
             $0.name.localizedCaseInsensitiveContains(searchText)
+                // 支持按实际文件名搜索（如"Notes"）
+                || (($0.path as NSString).lastPathComponent as NSString)
+                    .deletingPathExtension
+                    .localizedCaseInsensitiveContains(searchText)
         }
     }
 
