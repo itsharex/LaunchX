@@ -74,7 +74,7 @@ jobs:
                   # 尝试从 CHANGELOG.md 提取当前版本的更新内容
                   if [ -f "CHANGELOG.md" ]; then
                     # 提取当前版本的更新日志（从 ## vX.X.X 到下一个 ## v 之间的内容）
-                    CHANGELOG=$(awk "/^## ${VERSION}/,/^## v/{if(/^## v/ && !/^## ${VERSION}/)exit; print}" CHANGELOG.md)
+                    CHANGELOG=$(sed -n "/^## ${VERSION}/,/^## v/p" CHANGELOG.md | sed '$d')
                   fi
 
                   echo "notes<<EOF" >> $GITHUB_OUTPUT
