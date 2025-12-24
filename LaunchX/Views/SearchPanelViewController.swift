@@ -101,11 +101,12 @@ class SearchPanelViewController: NSViewController {
         ideNameLabel.translatesAutoresizingMaskIntoConstraints = false
         ideTagView.addSubview(ideNameLabel)
 
-        // Search icon
+        // Search icon (隐藏，不再显示)
         searchIcon.image = NSImage(
             systemSymbolName: "magnifyingglass", accessibilityDescription: nil)
         searchIcon.contentTintColor = .secondaryLabelColor
         searchIcon.translatesAutoresizingMaskIntoConstraints = false
+        searchIcon.isHidden = true
         view.addSubview(searchIcon)
 
         // Search field
@@ -113,7 +114,7 @@ class SearchPanelViewController: NSViewController {
         searchField.isBordered = false
         searchField.backgroundColor = .clear
         searchField.focusRingType = .none
-        searchField.font = .systemFont(ofSize: 26, weight: .light)
+        searchField.font = .systemFont(ofSize: 22, weight: .light)
         searchField.delegate = self
         searchField.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(searchField)
@@ -200,8 +201,9 @@ class SearchPanelViewController: NSViewController {
         ])
 
         // 创建并保存 searchField 的 leading 约束
+        // 默认直接从左边开始（无搜索图标）
         searchFieldLeadingToIcon = searchField.leadingAnchor.constraint(
-            equalTo: searchIcon.trailingAnchor, constant: 12)
+            equalTo: view.leadingAnchor, constant: 20)
         searchFieldLeadingToTag = searchField.leadingAnchor.constraint(
             equalTo: ideTagView.trailingAnchor, constant: 12)
         searchFieldLeadingToIcon?.isActive = true
@@ -538,9 +540,6 @@ class SearchPanelViewController: NSViewController {
         ideIconView.image = app.icon
         ideNameLabel.stringValue = app.name
 
-        // 隐藏搜索图标
-        searchIcon.isHidden = true
-
         // 切换 searchField 的 leading 约束
         searchFieldLeadingToIcon?.isActive = false
         searchFieldLeadingToTag?.isActive = true
@@ -548,11 +547,8 @@ class SearchPanelViewController: NSViewController {
 
     /// 恢复普通模式 UI
     private func restoreNormalModeUI() {
-        // 隐藏 IDE 标签
+        // 隐藏 IDE/文件夹 标签
         ideTagView.isHidden = true
-
-        // 显示搜索图标
-        searchIcon.isHidden = false
 
         // 切换 searchField 的 leading 约束
         searchFieldLeadingToTag?.isActive = false
@@ -642,9 +638,6 @@ class SearchPanelViewController: NSViewController {
         ideTagView.isHidden = false
         ideIconView.image = folder.icon
         ideNameLabel.stringValue = folder.name
-
-        // 隐藏搜索图标
-        searchIcon.isHidden = true
 
         // 切换 searchField 的 leading 约束
         searchFieldLeadingToIcon?.isActive = false

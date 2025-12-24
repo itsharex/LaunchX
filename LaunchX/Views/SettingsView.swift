@@ -39,7 +39,7 @@ struct GeneralSettingsView: View {
         Form {
             Section {
                 // 1. Launch at Login
-                Toggle("Open at Login:", isOn: $isLaunchAtLoginEnabled)
+                Toggle("登录时打开:", isOn: $isLaunchAtLoginEnabled)
                     .toggleStyle(CheckboxToggleStyle())
                     .onChange(of: isLaunchAtLoginEnabled) { _, newValue in
                         updateLaunchAtLogin(enabled: newValue)
@@ -50,7 +50,7 @@ struct GeneralSettingsView: View {
 
                 // 2. HotKey Configuration
                 HStack {
-                    Text("Activation Hotkey:")
+                    Text("激活快捷键:")
                     Spacer()
                     HotKeyRecorderView()
                 }
@@ -62,11 +62,11 @@ struct GeneralSettingsView: View {
             Section {
                 // 3. Default Window Mode
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Default Window Mode:")
+                    Text("默认窗口模式:")
 
                     Picker("", selection: $windowModeString) {
-                        Text("Simple").tag("simple")
-                        Text("Full").tag("full")
+                        Text("简约").tag("simple")
+                        Text("完整").tag("full")
                     }
                     .pickerStyle(RadioGroupPickerStyle())
                     .labelsHidden()
