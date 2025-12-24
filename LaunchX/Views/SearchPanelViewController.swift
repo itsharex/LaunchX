@@ -753,10 +753,13 @@ class ResultCellView: NSView {
     private let nameLabel = NSTextField(labelWithString: "")
     private let pathLabel = NSTextField(labelWithString: "")
     private let backgroundView = NSView()
+    private let arrowIndicator = NSImageView()  // IDE 箭头指示器
 
     // 用于切换 nameLabel 位置的约束
     private var nameLabelTopConstraint: NSLayoutConstraint!
     private var nameLabelCenterYConstraint: NSLayoutConstraint!
+    private var nameLabelTrailingToArrow: NSLayoutConstraint!
+    private var nameLabelTrailingToEdge: NSLayoutConstraint!
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -792,9 +795,22 @@ class ResultCellView: NSView {
         pathLabel.translatesAutoresizingMaskIntoConstraints = false
         addSubview(pathLabel)
 
+        // Arrow indicator for IDE apps
+        arrowIndicator.image = NSImage(
+            systemSymbolName: "arrow.right.to.line",
+            accessibilityDescription: "Tab to open projects")
+        arrowIndicator.contentTintColor = .secondaryLabelColor
+        arrowIndicator.translatesAutoresizingMaskIntoConstraints = false
+        arrowIndicator.isHidden = true
+        addSubview(arrowIndicator)
+
         // 创建两种布局约束
         nameLabelTopConstraint = nameLabel.topAnchor.constraint(equalTo: topAnchor, constant: 6)
         nameLabelCenterYConstraint = nameLabel.centerYAnchor.constraint(equalTo: centerYAnchor)
+        nameLabelTrailingToArrow = nameLabel.trailingAnchor.constraint(
+            equalTo: arrowIndicator.leadingAnchor, constant: -8)
+        nameLabelTrailingToEdge = nameLabel.trailingAnchor.constraint(
+            equalTo: trailingAnchor, constant: -20)
 
         NSLayoutConstraint.activate([
             backgroundView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 10),
@@ -808,8 +824,13 @@ class ResultCellView: NSView {
             iconView.heightAnchor.constraint(equalToConstant: 24),
 
             nameLabel.leadingAnchor.constraint(equalTo: iconView.trailingAnchor, constant: 12),
-            nameLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
             nameLabelTopConstraint,
+
+            // Arrow indicator
+            arrowIndicator.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+            arrowIndicator.centerYAnchor.constraint(equalTo: centerYAnchor),
+            arrowIndicator.widthAnchor.constraint(equalToConstant: 16),
+            arrowIndicator.heightAnchor.constraint(equalToConstant: 16),
 
             pathLabel.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
             pathLabel.trailingAnchor.constraint(equalTo: nameLabel.trailingAnchor),
@@ -826,6 +847,19 @@ class ResultCellView: NSView {
         pathLabel.isHidden = isApp
         pathLabel.stringValue = isApp ? "" : item.path
 
+        // 检测是否为支持的 IDE，显示箭头指示器
+        let isIDE = IDEType.detect(from: item.path) != nil
+        arrowIndicator.isHidden = !isIDE
+
+        // 切换 nameLabel trailing 约束
+        if isIDE {
+            nameLabelTrailingToEdge.isActive = false
+            nameLabelTrailingToArrow.isActive = true
+        } else {
+            nameLabelTrailingToArrow.isActive = false
+            nameLabelTrailingToEdge.isActive = true
+        }
+
         // 切换布局：App 垂直居中，其他顶部对齐
         if isApp {
             nameLabel.font = .systemFont(ofSize: 14, weight: .medium)
@@ -841,10 +875,12 @@ class ResultCellView: NSView {
             backgroundView.layer?.backgroundColor = NSColor.controlAccentColor.cgColor
             nameLabel.textColor = .white
             pathLabel.textColor = .white.withAlphaComponent(0.8)
+            arrowIndicator.contentTintColor = .white.withAlphaComponent(0.8)
         } else {
             backgroundView.layer?.backgroundColor = NSColor.clear.cgColor
             nameLabel.textColor = .labelColor
             pathLabel.textColor = .secondaryLabelColor
+            arrowIndicator.contentTintColor = .secondaryLabelColor
         }
     }
 }
