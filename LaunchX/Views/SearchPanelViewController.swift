@@ -542,6 +542,10 @@ class ResultCellView: NSView {
     private let pathLabel = NSTextField(labelWithString: "")
     private let backgroundView = NSView()
 
+    // 用于切换 nameLabel 位置的约束
+    private var nameLabelTopConstraint: NSLayoutConstraint!
+    private var nameLabelCenterYConstraint: NSLayoutConstraint!
+
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         setupViews()
@@ -576,6 +580,10 @@ class ResultCellView: NSView {
         pathLabel.translatesAutoresizingMaskIntoConstraints = false
         addSubview(pathLabel)
 
+        // 创建两种布局约束
+        nameLabelTopConstraint = nameLabel.topAnchor.constraint(equalTo: topAnchor, constant: 6)
+        nameLabelCenterYConstraint = nameLabel.centerYAnchor.constraint(equalTo: centerYAnchor)
+
         NSLayoutConstraint.activate([
             backgroundView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 10),
             backgroundView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -10),
@@ -589,7 +597,7 @@ class ResultCellView: NSView {
 
             nameLabel.leadingAnchor.constraint(equalTo: iconView.trailingAnchor, constant: 12),
             nameLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
-            nameLabel.topAnchor.constraint(equalTo: topAnchor, constant: 6),
+            nameLabelTopConstraint,
 
             pathLabel.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
             pathLabel.trailingAnchor.constraint(equalTo: nameLabel.trailingAnchor),
@@ -600,7 +608,22 @@ class ResultCellView: NSView {
     func configure(with item: SearchResult, isSelected: Bool) {
         iconView.image = item.icon
         nameLabel.stringValue = item.name
-        pathLabel.stringValue = item.path
+
+        // App 只显示名称（垂直居中、字体大），文件和文件夹显示路径
+        let isApp = item.path.hasSuffix(".app")
+        pathLabel.isHidden = isApp
+        pathLabel.stringValue = isApp ? "" : item.path
+
+        // 切换布局：App 垂直居中，其他顶部对齐
+        if isApp {
+            nameLabel.font = .systemFont(ofSize: 14, weight: .medium)
+            nameLabelTopConstraint.isActive = false
+            nameLabelCenterYConstraint.isActive = true
+        } else {
+            nameLabel.font = .systemFont(ofSize: 13, weight: .medium)
+            nameLabelCenterYConstraint.isActive = false
+            nameLabelTopConstraint.isActive = true
+        }
 
         if isSelected {
             backgroundView.layer?.backgroundColor = NSColor.controlAccentColor.cgColor
