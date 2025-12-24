@@ -47,11 +47,13 @@ final class SearchEngine: ObservableObject {
 
     private var configObserver: NSObjectProtocol?
     private var configChangeObserver: NSObjectProtocol?
+    private var customItemsConfigObserver: NSObjectProtocol?
 
     // MARK: - Initialization
 
     private init() {
         setupConfigObserver()
+        setupCustomItemsConfigObserver()
         loadIndexOnStartup()
     }
 
@@ -80,6 +82,28 @@ final class SearchEngine: ObservableObject {
                 }
             }
         }
+    }
+
+    /// 监听自定义项目配置变化（别名更新）
+    private func setupCustomItemsConfigObserver() {
+        customItemsConfigObserver = NotificationCenter.default.addObserver(
+            forName: .customItemsConfigDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.loadAliasMap()
+        }
+
+        // 初始加载别名
+        loadAliasMap()
+    }
+
+    /// 加载别名映射到内存索引
+    private func loadAliasMap() {
+        let customConfig = CustomItemsConfig.load()
+        let aliasMap = customConfig.aliasMap()
+        memoryIndex.setAliasMap(aliasMap)
+        print("SearchEngine: Loaded \(aliasMap.count) aliases")
     }
 
     // MARK: - Startup

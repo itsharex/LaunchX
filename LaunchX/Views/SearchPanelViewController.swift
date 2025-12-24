@@ -62,6 +62,7 @@ class SearchPanelViewController: NSViewController {
         super.viewDidLoad()
         setupUI()
         setupKeyboardMonitor()
+        setupNotificationObservers()
 
         // SearchEngine handles indexing automatically on init
         // Just trigger a reference to ensure it starts
@@ -79,6 +80,62 @@ class SearchPanelViewController: NSViewController {
         PanelManager.shared.onWillHide = { [weak self] in
             self?.resetState()
         }
+    }
+
+    /// 设置通知观察者
+    private func setupNotificationObservers() {
+        // 监听直接进入 IDE 模式的通知（由快捷键触发）
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleEnterIDEModeDirectly(_:)),
+            name: .enterIDEModeDirectly,
+            object: nil
+        )
+    }
+
+    /// 处理直接进入 IDE 模式的通知
+    @objc private func handleEnterIDEModeDirectly(_ notification: Notification) {
+        guard let userInfo = notification.userInfo,
+            let idePath = userInfo["path"] as? String,
+            let ideType = userInfo["ideType"] as? IDEType
+        else {
+            return
+        }
+
+        // 获取该 IDE 的最近项目
+        let projects = IDERecentProjectsService.shared.getRecentProjects(for: ideType, limit: 20)
+        guard !projects.isEmpty else { return }
+
+        // 创建一个虚拟的 SearchResult 来表示 IDE 应用
+        let icon = NSWorkspace.shared.icon(forFile: idePath)
+        icon.size = NSSize(width: 32, height: 32)
+        let name = FileManager.default.displayName(atPath: idePath)
+            .replacingOccurrences(of: ".app", with: "")
+
+        let ideApp = SearchResult(
+            name: name,
+            path: idePath,
+            icon: icon,
+            isDirectory: true
+        )
+
+        // 进入 IDE 项目模式
+        isInIDEProjectMode = true
+        currentIDEApp = ideApp
+        currentIDEType = ideType
+        ideProjects = projects
+        filteredIDEProjects = projects
+
+        // 更新 UI
+        updateIDEModeUI()
+
+        // 显示项目列表
+        results = projects.map { $0.toSearchResult() }
+        selectedIndex = 0
+        searchField.stringValue = ""
+        searchField.placeholderString = "搜索项目..."
+        tableView.reloadData()
+        updateVisibility()
     }
 
     // MARK: - Setup

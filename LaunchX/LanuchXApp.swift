@@ -116,7 +116,43 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             PanelManager.shared.togglePanel()
         }
 
+        // 设置自定义快捷键回调
+        setupCustomHotKeys()
+
         print("LaunchX: HotKey setup complete")
+    }
+
+    /// 设置自定义快捷键
+    private func setupCustomHotKeys() {
+        // 设置自定义快捷键触发回调
+        HotKeyService.shared.onCustomHotKeyPressed = { [weak self] itemId, isExtension in
+            self?.handleCustomHotKey(itemId: itemId, isExtension: isExtension)
+        }
+
+        // 从配置加载已保存的自定义快捷键
+        let config = CustomItemsConfig.load()
+        HotKeyService.shared.reloadCustomHotKeys(from: config)
+
+        print("LaunchX: Custom hotkeys loaded")
+    }
+
+    /// 处理自定义快捷键触发
+    private func handleCustomHotKey(itemId: UUID, isExtension: Bool) {
+        let config = CustomItemsConfig.load()
+        guard let item = config.item(byId: itemId) else {
+            print("LaunchX: Custom hotkey triggered but item not found: \(itemId)")
+            return
+        }
+
+        if isExtension, let ideType = item.ideType {
+            // 进入扩展模式：显示面板并进入 IDE 项目模式
+            print("LaunchX: Opening IDE mode for \(item.name)")
+            PanelManager.shared.showPanelInIDEMode(idePath: item.path, ideType: ideType)
+        } else {
+            // 直接打开应用或文件夹
+            print("LaunchX: Opening \(item.path)")
+            NSWorkspace.shared.open(URL(fileURLWithPath: item.path))
+        }
     }
 
     private func setupHotKeyAndShowPanel() {

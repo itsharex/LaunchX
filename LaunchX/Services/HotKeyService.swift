@@ -12,18 +12,40 @@ private func globalHotKeyHandler(
 class HotKeyService: ObservableObject {
     static let shared = HotKeyService()
 
-    // Callback to be executed when hotkey is pressed
+    // MARK: - 主快捷键（打开搜索面板）
+
+    /// 主快捷键触发回调
     var onHotKeyPressed: (() -> Void)?
 
-    private var hotKeyRef: EventHotKeyRef?
-    private let hotKeySignature: OSType
-    private let hotKeyId: UInt32 = 1
-    private var eventHandlerRef: EventHandlerRef?
+    private var mainHotKeyRef: EventHotKeyRef?
+    private let mainHotKeyId: UInt32 = 1
 
-    // Published properties to allow UI binding/observation
+    /// 主快捷键的按键代码
     @Published var currentKeyCode: UInt32 = UInt32(kVK_Space)
+    /// 主快捷键的修饰键
     @Published var currentModifiers: UInt32 = UInt32(optionKey)
     @Published var isEnabled: Bool = true
+
+    // MARK: - 自定义快捷键
+
+    /// 自定义快捷键触发回调 (itemId, isExtension)
+    var onCustomHotKeyPressed: ((UUID, Bool) -> Void)?
+
+    /// 自定义快捷键引用: hotKeyId -> EventHotKeyRef
+    private var customHotKeyRefs: [UInt32: EventHotKeyRef] = [:]
+    /// 自定义快捷键动作: hotKeyId -> (itemId, isExtension)
+    private var customHotKeyActions: [UInt32: (UUID, Bool)] = [:]
+    /// 快捷键配置缓存: hotKeyId -> HotKeyConfig（用于冲突检测）
+    private var customHotKeyConfigs: [UInt32: HotKeyConfig] = [:]
+    /// 下一个可用的快捷键 ID（从 100 开始，避免与主快捷键冲突）
+    private var nextCustomHotKeyId: UInt32 = 100
+
+    // MARK: - 私有属性
+
+    private let hotKeySignature: OSType
+    private var eventHandlerRef: EventHandlerRef?
+
+    // MARK: - 初始化
 
     private init() {
         // Create signature "LnHX"
@@ -34,6 +56,8 @@ class HotKeyService: ObservableObject {
 
         self.hotKeySignature = OSType((c1 << 24) | (c2 << 16) | (c3 << 8) | c4)
     }
+
+    // MARK: - 主快捷键方法
 
     func setupGlobalHotKey() {
         // Install event handler only once
@@ -63,17 +87,18 @@ class HotKeyService: ObservableObject {
         let savedModifiers = UserDefaults.standard.object(forKey: "hotKeyModifiers") as? Int
 
         if let key = savedKeyCode, let mods = savedModifiers {
-            registerHotKey(keyCode: UInt32(key), modifiers: UInt32(mods))
+            registerMainHotKey(keyCode: UInt32(key), modifiers: UInt32(mods))
         } else {
-            registerHotKey(keyCode: UInt32(kVK_Space), modifiers: UInt32(optionKey))
+            registerMainHotKey(keyCode: UInt32(kVK_Space), modifiers: UInt32(optionKey))
         }
     }
 
-    func registerHotKey(keyCode: UInt32, modifiers: UInt32) {
+    /// 注册主快捷键（打开搜索面板）
+    func registerMainHotKey(keyCode: UInt32, modifiers: UInt32) {
         // Unregister existing if any
-        if let hotKeyRef = hotKeyRef {
-            UnregisterEventHotKey(hotKeyRef)
-            self.hotKeyRef = nil
+        if let ref = mainHotKeyRef {
+            UnregisterEventHotKey(ref)
+            mainHotKeyRef = nil
         }
 
         self.currentKeyCode = keyCode
@@ -83,9 +108,49 @@ class HotKeyService: ObservableObject {
         UserDefaults.standard.set(Int(keyCode), forKey: "hotKeyKeyCode")
         UserDefaults.standard.set(Int(modifiers), forKey: "hotKeyModifiers")
 
-        let hotKeyID = EventHotKeyID(signature: hotKeySignature, id: hotKeyId)
+        let hotKeyID = EventHotKeyID(signature: hotKeySignature, id: mainHotKeyId)
 
         let registerStatus = RegisterEventHotKey(
+            keyCode,
+            modifiers,
+            hotKeyID,
+            GetApplicationEventTarget(),
+            0,
+            &mainHotKeyRef
+        )
+
+        if registerStatus != noErr {
+            print("HotKeyService: Failed to register main hotkey. Status: \(registerStatus)")
+        } else {
+            print("HotKeyService: Registered Main HotKey (Code: \(keyCode), Mods: \(modifiers))")
+        }
+    }
+
+    /// 兼容旧的方法名
+    func registerHotKey(keyCode: UInt32, modifiers: UInt32) {
+        registerMainHotKey(keyCode: keyCode, modifiers: modifiers)
+    }
+
+    // MARK: - 自定义快捷键方法
+
+    /// 注册自定义快捷键
+    /// - Parameters:
+    ///   - keyCode: 按键代码
+    ///   - modifiers: 修饰键
+    ///   - itemId: 关联的项目 ID
+    ///   - isExtension: 是否为"进入扩展"快捷键
+    /// - Returns: 快捷键 ID，失败返回 nil
+    @discardableResult
+    func registerCustomHotKey(
+        keyCode: UInt32, modifiers: UInt32, itemId: UUID, isExtension: Bool
+    ) -> UInt32? {
+        let hotKeyId = nextCustomHotKeyId
+        nextCustomHotKeyId += 1
+
+        let hotKeyID = EventHotKeyID(signature: hotKeySignature, id: hotKeyId)
+        var hotKeyRef: EventHotKeyRef?
+
+        let status = RegisterEventHotKey(
             keyCode,
             modifiers,
             hotKeyID,
@@ -94,14 +159,118 @@ class HotKeyService: ObservableObject {
             &hotKeyRef
         )
 
-        if registerStatus != noErr {
-            print("HotKeyService: Failed to register hotkey. Status: \(registerStatus)")
-        } else {
-            print("HotKeyService: Registered Global HotKey (Code: \(keyCode), Mods: \(modifiers))")
+        if status != noErr {
+            print(
+                "HotKeyService: Failed to register custom hotkey. Status: \(status), KeyCode: \(keyCode), Mods: \(modifiers)"
+            )
+            return nil
         }
+
+        customHotKeyRefs[hotKeyId] = hotKeyRef
+        customHotKeyActions[hotKeyId] = (itemId, isExtension)
+        customHotKeyConfigs[hotKeyId] = HotKeyConfig(keyCode: keyCode, modifiers: modifiers)
+
+        print(
+            "HotKeyService: Registered Custom HotKey (ID: \(hotKeyId), Code: \(keyCode), Mods: \(modifiers), Item: \(itemId), IsExt: \(isExtension))"
+        )
+
+        return hotKeyId
     }
 
-    // Internal handler called by the C function
+    /// 注销自定义快捷键
+    func unregisterCustomHotKey(hotKeyId: UInt32) {
+        guard let ref = customHotKeyRefs[hotKeyId] else { return }
+
+        UnregisterEventHotKey(ref)
+        customHotKeyRefs.removeValue(forKey: hotKeyId)
+        customHotKeyActions.removeValue(forKey: hotKeyId)
+        customHotKeyConfigs.removeValue(forKey: hotKeyId)
+
+        print("HotKeyService: Unregistered Custom HotKey (ID: \(hotKeyId))")
+    }
+
+    /// 注销所有自定义快捷键
+    func unregisterAllCustomHotKeys() {
+        for (hotKeyId, ref) in customHotKeyRefs {
+            UnregisterEventHotKey(ref)
+            print("HotKeyService: Unregistered Custom HotKey (ID: \(hotKeyId))")
+        }
+        customHotKeyRefs.removeAll()
+        customHotKeyActions.removeAll()
+        customHotKeyConfigs.removeAll()
+    }
+
+    /// 从配置重新加载所有自定义快捷键
+    func reloadCustomHotKeys(from config: CustomItemsConfig) {
+        // 先注销所有现有的自定义快捷键
+        unregisterAllCustomHotKeys()
+
+        // 重新注册
+        for item in config.customItems {
+            if let openKey = item.openHotKey {
+                registerCustomHotKey(
+                    keyCode: openKey.keyCode,
+                    modifiers: openKey.modifiers,
+                    itemId: item.id,
+                    isExtension: false
+                )
+            }
+            if let extKey = item.extensionHotKey {
+                registerCustomHotKey(
+                    keyCode: extKey.keyCode,
+                    modifiers: extKey.modifiers,
+                    itemId: item.id,
+                    isExtension: true
+                )
+            }
+        }
+
+        print("HotKeyService: Reloaded \(customHotKeyRefs.count) custom hotkeys")
+    }
+
+    // MARK: - 冲突检测
+
+    /// 检查快捷键是否冲突
+    /// - Parameters:
+    ///   - keyCode: 按键代码
+    ///   - modifiers: 修饰键
+    ///   - excludingItemId: 排除的项目 ID（用于编辑时排除自身）
+    /// - Returns: 冲突的描述，nil 表示无冲突
+    func checkConflict(keyCode: UInt32, modifiers: UInt32, excludingItemId: UUID? = nil) -> String?
+    {
+        // 检查与主快捷键的冲突
+        if keyCode == currentKeyCode && modifiers == currentModifiers {
+            return "打开搜索"
+        }
+
+        // 检查与自定义快捷键的冲突
+        for (hotKeyId, config) in customHotKeyConfigs {
+            if config.keyCode == keyCode && config.modifiers == modifiers {
+                if let action = customHotKeyActions[hotKeyId] {
+                    let itemId = action.0
+                    let isExtension = action.1
+
+                    // 如果是同一个项目，跳过
+                    if let excludeId = excludingItemId, itemId == excludeId {
+                        continue
+                    }
+
+                    // 从配置中获取项目名称
+                    let itemsConfig = CustomItemsConfig.load()
+                    if let item = itemsConfig.item(byId: itemId) {
+                        let suffix = isExtension ? " (进入扩展)" : " (打开)"
+                        return item.name + suffix
+                    }
+                }
+            }
+        }
+
+        return nil
+    }
+
+    // MARK: - 事件处理
+
+    /// 内部事件处理方法
     fileprivate func handleEvent(_ event: EventRef?) -> OSStatus {
         guard let event = event else { return OSStatus(eventNotHandledErr) }
 
@@ -116,11 +285,19 @@ class HotKeyService: ObservableObject {
             &hotKeyID
         )
 
-        if error == noErr {
-            // Verify signature and ID to ensure it's our hotkey
-            if hotKeyID.signature == hotKeySignature && hotKeyID.id == hotKeyId {
+        if error == noErr && hotKeyID.signature == hotKeySignature {
+            // 检查是否为主快捷键
+            if hotKeyID.id == mainHotKeyId {
                 DispatchQueue.main.async { [weak self] in
                     self?.onHotKeyPressed?()
+                }
+                return noErr
+            }
+
+            // 检查是否为自定义快捷键
+            if let action = customHotKeyActions[hotKeyID.id] {
+                DispatchQueue.main.async { [weak self] in
+                    self?.onCustomHotKeyPressed?(action.0, action.1)
                 }
                 return noErr
             }
@@ -130,9 +307,17 @@ class HotKeyService: ObservableObject {
     }
 
     deinit {
-        if let hotKeyRef = hotKeyRef {
-            UnregisterEventHotKey(hotKeyRef)
+        // 注销主快捷键
+        if let ref = mainHotKeyRef {
+            UnregisterEventHotKey(ref)
         }
+
+        // 注销所有自定义快捷键
+        for (_, ref) in customHotKeyRefs {
+            UnregisterEventHotKey(ref)
+        }
+
+        // 移除事件处理程序
         if let eventHandlerRef = eventHandlerRef {
             RemoveEventHandler(eventHandlerRef)
         }
@@ -170,7 +355,17 @@ extension HotKeyService {
         return string
     }
 
-    private static func keyString(for keyCode: UInt32) -> String {
+    /// 获取修饰键的符号数组
+    static func modifierSymbols(for modifiers: UInt32) -> [String] {
+        var symbols: [String] = []
+        if modifiers & UInt32(controlKey) != 0 { symbols.append("⌃") }
+        if modifiers & UInt32(optionKey) != 0 { symbols.append("⌥") }
+        if modifiers & UInt32(shiftKey) != 0 { symbols.append("⇧") }
+        if modifiers & UInt32(cmdKey) != 0 { symbols.append("⌘") }
+        return symbols
+    }
+
+    static func keyString(for keyCode: UInt32) -> String {
         // TISInputSource would be more accurate for localized keyboards,
         // but this manual mapping covers standard US ANSI layout.
         switch Int(keyCode) {

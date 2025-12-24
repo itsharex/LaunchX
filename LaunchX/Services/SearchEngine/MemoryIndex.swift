@@ -140,6 +140,10 @@ final class MemoryIndex {
     private var nameTrie = TrieNode()
     private var pinyinTrie = TrieNode()
 
+    // 别名支持
+    private var aliasMap: [String: String] = [:]  // alias (lowercase) -> path
+    private var aliasTrie = TrieNode()
+
     private let indexQueue = DispatchQueue(label: "com.launchx.memoryindex", qos: .userInteractive)
 
     // Statistics
@@ -283,13 +287,28 @@ final class MemoryIndex {
 
         var matchedApps: [(item: SearchItem, matchType: SearchItem.MatchType)] = []
         var matchedFiles: [(item: SearchItem, matchType: SearchItem.MatchType)] = []
+        var aliasMatched: Set<String> = []  // 记录已通过别名匹配的路径
 
         matchedApps.reserveCapacity(10)
         matchedFiles.reserveCapacity(20)
 
+        // 0. 先搜索别名（最高优先级）
+        let aliasResults = searchByAlias(lowerQuery)
+        for item in aliasResults {
+            if excludedApps.contains(item.path) { continue }
+            aliasMatched.insert(item.path)
+
+            if item.isApp {
+                matchedApps.append((item, .exact))  // 别名匹配视为精确匹配
+            } else {
+                matchedFiles.append((item, .exact))
+            }
+        }
+
         // 1. Search Apps (fast, small list)
         for app in apps {
             if excludedApps.contains(app.path) { continue }
+            if aliasMatched.contains(app.path) { continue }  // 跳过已通过别名匹配的
 
             if let matchType = app.matchesQuery(lowerQuery) {
                 matchedApps.append((app, matchType))
@@ -416,5 +435,57 @@ final class MemoryIndex {
         }
 
         return current.items
+    }
+
+    // MARK: - 别名支持
+
+    /// 设置别名映射表
+    /// - Parameter map: 别名到路径的映射 (alias -> path)
+    func setAliasMap(_ map: [String: String]) {
+        indexQueue.async { [weak self] in
+            guard let self = self else { return }
+
+            self.aliasMap = map.reduce(into: [String: String]()) { result, pair in
+                result[pair.key.lowercased()] = pair.value
+            }
+
+            self.rebuildAliasTrie()
+
+            print("MemoryIndex: Updated alias map with \(map.count) aliases")
+        }
+    }
+
+    /// 重建别名 Trie
+    private func rebuildAliasTrie() {
+        aliasTrie = TrieNode()
+
+        for (alias, path) in aliasMap {
+            if let item = allItems[path] {
+                insertIntoTrie(aliasTrie, key: alias, item: item)
+            }
+        }
+    }
+
+    /// 通过别名搜索
+    /// - Parameter query: 搜索查询（小写）
+    /// - Returns: 匹配的项目列表
+    private func searchByAlias(_ lowerQuery: String) -> [SearchItem] {
+        var results: [SearchItem] = []
+
+        // 精确匹配
+        if let path = aliasMap[lowerQuery], let item = allItems[path] {
+            results.append(item)
+        }
+
+        // 前缀匹配
+        if let items = searchTrie(aliasTrie, prefix: lowerQuery) {
+            for item in items {
+                if !results.contains(where: { $0.path == item.path }) {
+                    results.append(item)
+                }
+            }
+        }
+
+        return results
     }
 }

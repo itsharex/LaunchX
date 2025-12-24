@@ -7,20 +7,25 @@ struct SettingsView: View {
         TabView {
             GeneralSettingsView()
                 .tabItem {
-                    Label("General", systemImage: "gear")
+                    Label("通用", systemImage: "gear")
                 }
 
             SearchSettingsView()
                 .tabItem {
-                    Label("Search", systemImage: "magnifyingglass")
+                    Label("搜索", systemImage: "magnifyingglass")
+                }
+
+            AliasShortcutSettingsView()
+                .tabItem {
+                    Label("别名与快捷键", systemImage: "command.square")
                 }
 
             Text("Extensions")
                 .tabItem {
-                    Label("Extensions", systemImage: "puzzlepiece")
+                    Label("扩展", systemImage: "puzzlepiece")
                 }
         }
-        .frame(width: 600, height: 480)
+        .frame(width: 700, height: 520)
         .padding()
         .onAppear {
             PanelManager.shared.hidePanel(deactivateApp: false)

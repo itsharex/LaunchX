@@ -15,6 +15,9 @@ class PanelManager: NSObject, NSWindowDelegate {
     private var lastShowTime: Date = .distantPast
     private var isSetup = false
 
+    // 用于快捷键触发 IDE 模式
+    private var pendingIDEMode: (path: String, ideType: IDEType)?
+
     private override init() {
         super.init()
     }
@@ -105,6 +108,26 @@ class PanelManager: NSObject, NSWindowDelegate {
         }
 
         isPanelVisible = false
+    }
+
+    // MARK: - IDE 模式入口
+
+    /// 以 IDE 模式显示面板（用于快捷键触发）
+    /// - Parameters:
+    ///   - idePath: IDE 应用路径
+    ///   - ideType: IDE 类型
+    func showPanelInIDEMode(idePath: String, ideType: IDEType) {
+        guard isSetup else { return }
+
+        // 发送通知让 SearchPanelViewController 进入 IDE 模式
+        NotificationCenter.default.post(
+            name: .enterIDEModeDirectly,
+            object: nil,
+            userInfo: ["path": idePath, "ideType": ideType]
+        )
+
+        // 显示面板
+        showPanel()
     }
 
     // MARK: - NSWindowDelegate
