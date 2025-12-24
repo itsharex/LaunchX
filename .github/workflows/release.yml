@@ -68,11 +68,29 @@ jobs:
             - name: Generate release notes
               id: release_notes
               run: |
+                  VERSION="${{ github.ref_name }}"
+                  CHANGELOG=""
+
+                  # 尝试从 CHANGELOG.md 提取当前版本的更新内容
+                  if [ -f "CHANGELOG.md" ]; then
+                    # 提取当前版本的更新日志（从 ## vX.X.X 到下一个 ## v 之间的内容）
+                    CHANGELOG=$(awk "/^## ${VERSION}/,/^## v/{if(/^## v/ && !/^## ${VERSION}/)exit; print}" CHANGELOG.md)
+                  fi
+
                   echo "notes<<EOF" >> $GITHUB_OUTPUT
-                  echo "## LaunchX ${{ github.ref_name }}" >> $GITHUB_OUTPUT
+
+                  # 如果有 CHANGELOG 内容则使用，否则使用默认标题
+                  if [ -n "$CHANGELOG" ]; then
+                    echo "$CHANGELOG" >> $GITHUB_OUTPUT
+                  else
+                    echo "## LaunchX ${VERSION}" >> $GITHUB_OUTPUT
+                  fi
+
+                  echo "" >> $GITHUB_OUTPUT
+                  echo "---" >> $GITHUB_OUTPUT
                   echo "" >> $GITHUB_OUTPUT
                   echo "### 安装说明" >> $GITHUB_OUTPUT
-                  echo "1. 下载 \`LaunchX-${{ github.ref_name }}-arm64.dmg\` 或 \`LaunchX-${{ github.ref_name }}-arm64.zip\`" >> $GITHUB_OUTPUT
+                  echo "1. 下载 \`LaunchX-${VERSION}-arm64.dmg\` 或 \`LaunchX-${VERSION}-arm64.zip\`" >> $GITHUB_OUTPUT
                   echo "2. 打开 DMG 并将 LaunchX 拖入 Applications，或解压 ZIP 后移动到 Applications" >> $GITHUB_OUTPUT
                   echo "3. 启动 LaunchX 并授予必要的权限" >> $GITHUB_OUTPUT
                   echo "4. 使用 \`Option + Space\` 激活搜索" >> $GITHUB_OUTPUT
