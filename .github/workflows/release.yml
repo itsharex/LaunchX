@@ -37,6 +37,7 @@ jobs:
               run: |
                   mkdir -p build/export
                   cp -R build/LaunchX.xcarchive/Products/Applications/LaunchX.app build/export/
+                  cp repair.sh build/export/
 
             - name: Create DMG
               run: |
