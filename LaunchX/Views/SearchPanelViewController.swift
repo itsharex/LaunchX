@@ -57,15 +57,22 @@ class SearchPanelViewController: NSViewController {
 
     override func loadView() {
         // Create visual effect view with rounded corners
-        let visualEffectView = NSVisualEffectView()
-        visualEffectView.material = .sidebar
-        visualEffectView.blendingMode = .behindWindow
-        visualEffectView.state = .active
-        visualEffectView.wantsLayer = true
-        visualEffectView.layer?.cornerRadius = 16
-        visualEffectView.layer?.masksToBounds = true
+        if #available(macOS 26.0, *) {
+            let glassEffectView = NSGlassEffectView()
+            glassEffectView.style = .clear
+            glassEffectView.tintColor = NSColor(named: "PanelBackgroundColor")
+            self.view = glassEffectView
+        } else {
+            let visualEffectView = NSVisualEffectView()
+            visualEffectView.material = .sidebar
+            visualEffectView.blendingMode = .behindWindow
+            visualEffectView.state = .active
+            visualEffectView.wantsLayer = true
+            visualEffectView.layer?.cornerRadius = 16
+            visualEffectView.layer?.masksToBounds = true
 
-        self.view = visualEffectView
+            self.view = visualEffectView
+        }
     }
 
     override func viewDidLoad() {
