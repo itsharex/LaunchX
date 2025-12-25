@@ -9,6 +9,8 @@
 - 启动 LaunchX 并授予必要的权限
 - 默认使用 `Option + Space` 激活搜索
 
+> 安装出现 「文件已损坏」「移动f到垃圾篓」等问题可以使用 [repair.sh](./repair.sh) 脚本修复 `sh repair.sh`
+
 ### 系统要求
 - macOS 13.0 或更高版本
 - Apple Silicon (M1/M2/M3/M4)
