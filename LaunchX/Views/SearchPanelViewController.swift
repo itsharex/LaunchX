@@ -39,6 +39,16 @@ class SearchPanelViewController: NSViewController {
     private let rowHeight: CGFloat = 44
     private let headerHeight: CGFloat = 80
 
+    // Placeholder 样式
+    private func setPlaceholder(_ text: String) {
+        let attributes: [NSAttributedString.Key: Any] = [
+            .foregroundColor: NSColor.secondaryLabelColor,
+            .font: NSFont.systemFont(ofSize: 22, weight: .light),
+        ]
+        searchField.placeholderAttributedString = NSAttributedString(
+            string: text, attributes: attributes)
+    }
+
     // 用于 IDE 模式切换的约束
     private var searchFieldLeadingToIcon: NSLayoutConstraint?
     private var searchFieldLeadingToTag: NSLayoutConstraint?
@@ -144,7 +154,7 @@ class SearchPanelViewController: NSViewController {
         results = projects.map { $0.toSearchResult() }
         selectedIndex = 0
         searchField.stringValue = ""
-        searchField.placeholderString = "搜索项目..."
+        setPlaceholder("搜索项目...")
         tableView.reloadData()
         updateVisibility()
 
@@ -180,7 +190,7 @@ class SearchPanelViewController: NSViewController {
         view.addSubview(searchIcon)
 
         // Search field
-        searchField.placeholderString = "搜索应用或文档..."
+        setPlaceholder("搜索应用或文档...")
         searchField.isBordered = false
         searchField.backgroundColor = .clear
         searchField.focusRingType = .none
@@ -345,7 +355,7 @@ class SearchPanelViewController: NSViewController {
             ideProjects = []
             filteredIDEProjects = []
             restoreNormalModeUI()
-            searchField.placeholderString = "搜索应用或文档..."
+            setPlaceholder("搜索应用或文档...")
         }
 
         // 如果在文件夹打开模式，先恢复普通模式 UI
@@ -354,7 +364,7 @@ class SearchPanelViewController: NSViewController {
             currentFolder = nil
             folderOpeners = []
             restoreNormalModeUI()
-            searchField.placeholderString = "搜索应用或文档..."
+            setPlaceholder("搜索应用或文档...")
         }
 
         searchField.stringValue = ""
@@ -583,7 +593,7 @@ class SearchPanelViewController: NSViewController {
         results = projects.map { $0.toSearchResult() }
         selectedIndex = 0
         searchField.stringValue = ""
-        searchField.placeholderString = "搜索项目..."
+        setPlaceholder("搜索项目...")
         tableView.reloadData()
         updateVisibility()
 
@@ -603,7 +613,7 @@ class SearchPanelViewController: NSViewController {
 
         // 恢复搜索状态
         searchField.stringValue = ""
-        searchField.placeholderString = "搜索应用或文档..."
+        setPlaceholder("搜索应用或文档...")
         resetState()
     }
 
@@ -684,7 +694,7 @@ class SearchPanelViewController: NSViewController {
         }
         selectedIndex = 0
         searchField.stringValue = ""
-        searchField.placeholderString = "选择打开方式..."
+        setPlaceholder("选择打开方式...")
         tableView.reloadData()
         updateVisibility()
 
@@ -702,7 +712,7 @@ class SearchPanelViewController: NSViewController {
 
         // 恢复搜索状态
         searchField.stringValue = ""
-        searchField.placeholderString = "搜索应用或文档..."
+        setPlaceholder("搜索应用或文档...")
         resetState()
     }
 
