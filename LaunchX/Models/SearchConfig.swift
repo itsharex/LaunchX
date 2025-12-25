@@ -12,7 +12,8 @@ struct SearchConfig: Codable, Equatable {
     static let defaultAppScopes: [String] = [
         "/Applications",
         "/System/Applications",
-        "/System/Library/CoreServices",
+        "/System/Library/CoreServices",  // Finder
+        "/System/Volumes/Preboot/Cryptexes/App/System/Applications",  // Safari
     ]
 
     /// Default excluded folder names
