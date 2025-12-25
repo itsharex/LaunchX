@@ -419,8 +419,6 @@ class MetadataQueryService: ObservableObject {
         indexingQueue.async { [weak self] in
             guard let self = self else { return }
 
-            let count = results.count
-
             // For incremental updates, only process new items
             let existingPaths = self.indexedPaths
             var newItems: [(NSMetadataItem, String)] = []

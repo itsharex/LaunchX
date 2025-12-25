@@ -339,13 +339,6 @@ final class FileIndexer {
             pinyinAcronym = name.pinyinAcronym.lowercased()
         }
 
-        // For apps where display name differs from filename, also index the filename
-        // This allows searching "wechat" to find "微信"
-        var fileNameForSearch: String? = nil
-        if isApp && name.lowercased() != actualFileName.lowercased() {
-            fileNameForSearch = actualFileName.lowercased()
-        }
-
         return FileRecord(
             name: name,
             path: url.path,
