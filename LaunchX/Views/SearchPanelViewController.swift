@@ -56,19 +56,19 @@ class SearchPanelViewController: NSViewController {
     // MARK: - Lifecycle
 
     override func loadView() {
-        // Create visual effect view with rounded corners
-        // NSGlassEffectView 仅在 macOS 26+ SDK 中可用，暂时禁用
-        // TODO: 当 Xcode 支持 macOS 26 SDK 后启用
-        // #if canImport(AppKit, _version: 26.0)
-        //     if #available(macOS 26.0, *) {
-        //         let glassEffectView = NSGlassEffectView()
-        //         glassEffectView.style = .clear
-        //         glassEffectView.tintColor = NSColor(named: "PanelBackgroundColor")
-        //         self.view = glassEffectView
-        //         return
-        //     }
-        // #endif
+        // macOS 26+ 使用 Liquid Glass 效果
+        if #available(macOS 26.0, *) {
+            let glassEffectView = NSGlassEffectView()
+            glassEffectView.style = .clear
+            glassEffectView.tintColor = NSColor(named: "PanelBackgroundColor")
+            glassEffectView.wantsLayer = true
+            glassEffectView.layer?.cornerRadius = 16
+            glassEffectView.layer?.masksToBounds = true
+            self.view = glassEffectView
+            return
+        }
 
+        // macOS 26 以下使用传统的 NSVisualEffectView
         let visualEffectView = NSVisualEffectView()
         visualEffectView.material = .sidebar
         visualEffectView.blendingMode = .behindWindow
