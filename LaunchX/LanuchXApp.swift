@@ -15,13 +15,14 @@ struct LaunchXApp: App {
 }
 
 class AppDelegate: NSObject, NSApplicationDelegate {
-    var statusItem: NSStatusItem?
+    var statusBar: NSStatusBar!
+    var statusItem: NSStatusItem!
     var onboardingWindow: NSWindow?
     var isQuitting = false
     private var permissionObserver: AnyCancellable?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        print("LaunchX: applicationDidFinishLaunching called")
+        setupStatusItem()
 
         // 先不设置 activation policy，等权限检查后决定
         // 如果需要显示引导页，保持 regular 模式
@@ -201,10 +202,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func setupStatusItem() {
-        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        if let button = statusItem?.button {
-            button.image = NSImage(
-                systemSymbolName: "magnifyingglass", accessibilityDescription: "LaunchX")
+        statusBar = NSStatusBar()
+        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        
+        if let button = statusItem.button {
+            button.image = NSImage(named: NSImage.Name("StatusBarIcon"))
         }
 
         let menu = NSMenu()
