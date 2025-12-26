@@ -636,16 +636,16 @@ struct ToolHotKeyRecorderPopover: View {
         monitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown]) { event in
             // Escape 取消
             if event.keyCode == kVK_Escape {
-                stopRecording()
-                isPresented = false
+                self.stopRecording()
+                self.isPresented = false
                 return nil
             }
 
             // Delete 清除
             if event.keyCode == kVK_Delete || event.keyCode == kVK_ForwardDelete {
-                hotKey = nil
-                stopRecording()
-                isPresented = false
+                self.hotKey = nil
+                self.stopRecording()
+                self.isPresented = false
                 return nil
             }
 
@@ -661,17 +661,17 @@ struct ToolHotKeyRecorderPopover: View {
             if let conflict = HotKeyService.shared.checkConflict(
                 keyCode: keyCode,
                 modifiers: modifiers,
-                excludingItemId: toolId,
-                excludingIsExtension: isExtensionHotKey
+                excludingItemId: self.toolId,
+                excludingIsExtension: self.isExtensionHotKey
             ) {
-                conflictMessage = conflict
+                self.conflictMessage = conflict
                 return nil
             }
 
             // 设置快捷键
-            hotKey = HotKeyConfig(keyCode: keyCode, modifiers: modifiers)
-            stopRecording()
-            isPresented = false
+            self.hotKey = HotKeyConfig(keyCode: keyCode, modifiers: modifiers)
+            self.stopRecording()
+            self.isPresented = false
             return nil
         }
     }

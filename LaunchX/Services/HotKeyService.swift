@@ -95,6 +95,9 @@ class HotKeyService: ObservableObject {
     private let hotKeySignature: OSType
     private var eventHandlerRef: EventHandlerRef?
 
+    /// 是否处于录制模式（暂停状态）
+    private(set) var isSuspended: Bool = false
+
     // MARK: - 初始化
 
     private init() {
@@ -422,6 +425,8 @@ class HotKeyService: ObservableObject {
 
     /// 暂停所有快捷键（录制时使用）
     func suspendAllHotKeys() {
+        isSuspended = true
+
         // 暂停主快捷键
         if let ref = mainHotKeyRef {
             UnregisterEventHotKey(ref)
@@ -445,6 +450,7 @@ class HotKeyService: ObservableObject {
 
     /// 恢复所有快捷键
     func resumeAllHotKeys() {
+        isSuspended = false
         // 恢复主快捷键或双击修饰键
         if useDoubleTapModifier {
             startDoubleTapMonitoring()
@@ -476,6 +482,12 @@ class HotKeyService: ObservableObject {
 
     /// 从配置重新加载所有自定义快捷键（旧版本，兼容 CustomItemsConfig）
     func reloadCustomHotKeys(from config: CustomItemsConfig) {
+        // 如果处于暂停状态（录制模式），不重新加载快捷键
+        guard !isSuspended else {
+            print("HotKeyService: Skipping reload - currently suspended")
+            return
+        }
+
         // 先注销所有现有的自定义快捷键
         unregisterAllCustomHotKeys()
 
@@ -506,6 +518,12 @@ class HotKeyService: ObservableObject {
 
     /// 从 ToolsConfig 重新加载所有工具快捷键
     func reloadToolHotKeys(from config: ToolsConfig) {
+        // 如果处于暂停状态（录制模式），不重新加载快捷键
+        guard !isSuspended else {
+            print("HotKeyService: Skipping reload - currently suspended")
+            return
+        }
+
         // 先注销所有现有的自定义快捷键
         unregisterAllCustomHotKeys()
 
@@ -542,6 +560,8 @@ class HotKeyService: ObservableObject {
     ///   - keyCode: 按键代码
     ///   - modifiers: 修饰键
     ///   - excludingItemId: 排除的项目 ID（用于编辑时排除自身）
+    ///   - excludingIsExtension: 排除的快捷键类型
+    ///   - excludingMainHotKey: 是否排除主快捷键检测
     /// - Returns: 冲突的描述，nil 表示无冲突
     func checkConflict(
         keyCode: UInt32, modifiers: UInt32, excludingItemId: UUID? = nil,
@@ -554,34 +574,65 @@ class HotKeyService: ObservableObject {
             return "启动快捷键"
         }
 
-        // 检查与已注册的自定义快捷键的冲突
-        for (hotKeyId, config) in customHotKeyConfigs {
-            if config.keyCode == keyCode && config.modifiers == modifiers {
-                if let action = customHotKeyActions[hotKeyId] {
-                    let itemId = action.0
-                    let isExtension = action.1
-
-                    // 如果是同一个项目的同类型快捷键，跳过
-                    if let excludeId = excludingItemId,
-                        let excludeIsExt = excludingIsExtension,
-                        itemId == excludeId && isExtension == excludeIsExt
-                    {
-                        continue
-                    }
-
-                    // 优先从 ToolsConfig 获取名称，回退到 CustomItemsConfig
-                    let toolsConfig = ToolsConfig.load()
-                    if let tool = toolsConfig.tool(byId: itemId) {
-                        let suffix = isExtension ? " (进入扩展)" : " (打开)"
-                        return tool.name + suffix
-                    }
-
-                    let itemsConfig = CustomItemsConfig.load()
-                    if let item = itemsConfig.item(byId: itemId) {
-                        let suffix = isExtension ? " (进入扩展)" : " (打开)"
-                        return item.name + suffix
-                    }
+        // 直接从 ToolsConfig 读取所有已配置的快捷键进行冲突检测
+        let toolsConfig = ToolsConfig.load()
+        for tool in toolsConfig.tools {
+            // 检查主快捷键
+            if let hotKey = tool.hotKey,
+                hotKey.keyCode == keyCode && hotKey.modifiers == modifiers
+            {
+                // 如果是同一个项目的同类型快捷键，跳过
+                if let excludeId = excludingItemId,
+                    let excludeIsExt = excludingIsExtension,
+                    tool.id == excludeId && !excludeIsExt
+                {
+                    continue
                 }
+                return tool.name + " (打开)"
+            }
+
+            // 检查扩展快捷键（仅 IDE）
+            if tool.isIDE, let extKey = tool.extensionHotKey,
+                extKey.keyCode == keyCode && extKey.modifiers == modifiers
+            {
+                // 如果是同一个项目的同类型快捷键，跳过
+                if let excludeId = excludingItemId,
+                    let excludeIsExt = excludingIsExtension,
+                    tool.id == excludeId && excludeIsExt
+                {
+                    continue
+                }
+                return tool.name + " (进入扩展)"
+            }
+        }
+
+        // 回退检查 CustomItemsConfig（兼容旧数据）
+        let itemsConfig = CustomItemsConfig.load()
+        for item in itemsConfig.customItems {
+            // 检查打开快捷键
+            if let openKey = item.openHotKey,
+                openKey.keyCode == keyCode && openKey.modifiers == modifiers
+            {
+                if let excludeId = excludingItemId,
+                    let excludeIsExt = excludingIsExtension,
+                    item.id == excludeId && !excludeIsExt
+                {
+                    continue
+                }
+                return item.name + " (打开)"
+            }
+
+            // 检查扩展快捷键
+            if let extKey = item.extensionHotKey,
+                extKey.keyCode == keyCode && extKey.modifiers == modifiers
+            {
+                if let excludeId = excludingItemId,
+                    let excludeIsExt = excludingIsExtension,
+                    item.id == excludeId && excludeIsExt
+                {
+                    continue
+                }
+                return item.name + " (进入扩展)"
             }
         }
 
