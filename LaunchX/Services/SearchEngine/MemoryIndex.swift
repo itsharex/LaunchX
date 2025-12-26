@@ -54,6 +54,27 @@ final class MemoryIndex {
             self.wordAcronym = SearchItem.generateWordAcronym(from: record.name)
         }
 
+        /// 用于创建网页直达等非文件系统项目
+        init(name: String, path: String, isWebLink: Bool) {
+            self.name = name
+            self.lowerName = name.lowercased()
+            self.path = path
+            self.lowerFileName = name.lowercased()
+            self.isApp = false
+            self.isDirectory = false
+            self.modifiedDate = Date()
+            self.pinyinFull = nil
+            self.pinyinAcronym = nil
+            self.wordAcronym = SearchItem.generateWordAcronym(from: name)
+
+            // 为网页直达设置特殊图标
+            if isWebLink {
+                self._icon = NSImage(
+                    systemSymbolName: "globe", accessibilityDescription: "Web Link")
+                self._icon?.size = NSSize(width: 32, height: 32)
+            }
+        }
+
         /// Generate acronym from first letter of each word
         /// "Visual Studio Code" -> "vsc", "Activity Monitor" -> "am"
         private static func generateWordAcronym(from name: String) -> String? {
@@ -136,6 +157,7 @@ final class MemoryIndex {
     private var apps: [SearchItem] = []
     private var files: [SearchItem] = []
     private var directories: [SearchItem] = []  // 单独存储目录，便于搜索
+    private var tools: [SearchItem] = []  // 工具项目（网页直达等非文件系统项目）
     private var allItems: [String: SearchItem] = [:]  // path -> item for O(1) lookup
 
     private var nameTrie = TrieNode()
@@ -357,6 +379,17 @@ final class MemoryIndex {
             }
         }
 
+        // 1.5 Search Tools (网页直达等非文件系统项目，通过名称搜索)
+        let currentTools = tools
+        for tool in currentTools {
+            if aliasMatched.contains(tool.path) { continue }  // 跳过已通过别名匹配的
+
+            if let matchType = tool.matchesQuery(lowerQuery) {
+                // 工具项目放在应用列表中，优先级较高
+                matchedApps.append((tool, matchType))
+            }
+        }
+
         // Sort apps
         matchedApps.sort { lhs, rhs in
             if lhs.matchType != rhs.matchType {
@@ -563,6 +596,16 @@ final class MemoryIndex {
 
     // MARK: - 别名支持
 
+    /// 别名工具信息（用于非应用类型的工具）
+    struct AliasToolInfo {
+        let name: String
+        let path: String  // 对于网页是 URL，对于应用是路径
+        let isWebLink: Bool
+    }
+
+    /// 别名工具映射（alias -> AliasToolInfo）
+    private var aliasToolMap: [String: AliasToolInfo] = [:]
+
     /// 设置别名映射表
     /// - Parameter map: 别名到路径的映射 (alias -> path)
     func setAliasMap(_ map: [String: String]) {
@@ -579,12 +622,91 @@ final class MemoryIndex {
         }
     }
 
+    /// 设置别名映射表（带工具信息，支持网页直达等）
+    /// - Parameter tools: 别名到工具信息的映射
+    func setAliasMapWithTools(_ toolsMap: [String: AliasToolInfo]) {
+        queue.async { [weak self] in
+            guard let self = self else { return }
+
+            self.aliasToolMap = toolsMap.reduce(into: [String: AliasToolInfo]()) { result, pair in
+                result[pair.key.lowercased()] = pair.value
+            }
+
+            // 同时更新旧的 aliasMap 以保持兼容
+            self.aliasMap = toolsMap.reduce(into: [String: String]()) { result, pair in
+                result[pair.key.lowercased()] = pair.value.path
+            }
+
+            // 构建工具项目列表（用于名称搜索）
+            self.tools.removeAll()
+            var addedPaths = Set<String>()  // 避免重复添加
+            for (_, toolInfo) in toolsMap {
+                // 跳过已在 allItems 中的项目（如应用）
+                if self.allItems[toolInfo.path] != nil { continue }
+                // 跳过已添加的项目
+                if addedPaths.contains(toolInfo.path) { continue }
+
+                let item = SearchItem(
+                    name: toolInfo.name,
+                    path: toolInfo.path,
+                    isWebLink: toolInfo.isWebLink
+                )
+                self.tools.append(item)
+                addedPaths.insert(toolInfo.path)
+            }
+
+            self.rebuildAliasTrie()
+
+            print(
+                "MemoryIndex: Updated alias map with \(toolsMap.count) aliases, \(self.tools.count) tool items"
+            )
+        }
+    }
+
+    /// 设置工具列表（用于名称搜索，不仅仅是别名）
+    /// - Parameter toolsList: 工具信息列表
+    func setToolsList(_ toolsList: [AliasToolInfo]) {
+        queue.async { [weak self] in
+            guard let self = self else { return }
+
+            self.tools.removeAll()
+            var addedPaths = Set<String>()
+
+            for toolInfo in toolsList {
+                // 跳过已在 allItems 中的项目（如应用）
+                if self.allItems[toolInfo.path] != nil { continue }
+                // 跳过已添加的项目
+                if addedPaths.contains(toolInfo.path) { continue }
+
+                let item = SearchItem(
+                    name: toolInfo.name,
+                    path: toolInfo.path,
+                    isWebLink: toolInfo.isWebLink
+                )
+                self.tools.append(item)
+                addedPaths.insert(toolInfo.path)
+            }
+
+            print("MemoryIndex: Updated tools list with \(self.tools.count) items")
+        }
+    }
+
     /// 重建别名 Trie
     private func rebuildAliasTrie() {
         aliasTrie = TrieNode()
 
         for (alias, path) in aliasMap {
+            // 首先尝试从 allItems 中查找（应用类型）
             if let item = allItems[path] {
+                insertIntoTrie(aliasTrie, key: alias, item: item)
+            }
+            // 如果找不到，尝试从 aliasToolMap 创建临时 SearchItem（网页直达等）
+            else if let toolInfo = aliasToolMap[alias] {
+                let item = SearchItem(
+                    name: toolInfo.name,
+                    path: toolInfo.path,
+                    isWebLink: toolInfo.isWebLink
+                )
                 insertIntoTrie(aliasTrie, key: alias, item: item)
             }
         }
@@ -597,8 +719,18 @@ final class MemoryIndex {
         var results: [SearchItem] = []
 
         // 精确匹配
-        if let path = aliasMap[lowerQuery], let item = allItems[path] {
-            results.append(item)
+        if let path = aliasMap[lowerQuery] {
+            if let item = allItems[path] {
+                results.append(item)
+            } else if let toolInfo = aliasToolMap[lowerQuery] {
+                // 为网页直达等创建临时 SearchItem
+                let item = SearchItem(
+                    name: toolInfo.name,
+                    path: toolInfo.path,
+                    isWebLink: toolInfo.isWebLink
+                )
+                results.append(item)
+            }
         }
 
         // 前缀匹配

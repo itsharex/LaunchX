@@ -60,6 +60,7 @@ struct ToolItem: Codable, Identifiable, Equatable, Hashable {
 
     // WebLink 特有属性
     var url: String?
+    var iconData: Data?  // 自定义图标数据（PNG 格式）
 
     // Utility 特有属性 (预留)
     var extensionIdentifier: String?
@@ -80,6 +81,7 @@ struct ToolItem: Codable, Identifiable, Equatable, Hashable {
         path: String? = nil,
         extensionHotKey: HotKeyConfig? = nil,
         url: String? = nil,
+        iconData: Data? = nil,
         extensionIdentifier: String? = nil,
         command: String? = nil
     ) {
@@ -92,6 +94,7 @@ struct ToolItem: Codable, Identifiable, Equatable, Hashable {
         self.path = path
         self.extensionHotKey = extensionHotKey
         self.url = url
+        self.iconData = iconData
         self.extensionIdentifier = extensionIdentifier
         self.command = command
     }
@@ -112,12 +115,15 @@ struct ToolItem: Codable, Identifiable, Equatable, Hashable {
     }
 
     /// 从网页 URL 创建
-    static func webLink(name: String, url: String, alias: String? = nil) -> ToolItem {
+    static func webLink(name: String, url: String, alias: String? = nil, iconData: Data? = nil)
+        -> ToolItem
+    {
         ToolItem(
             type: .webLink,
             name: name,
             alias: alias,
-            url: url
+            url: url,
+            iconData: iconData
         )
     }
 
@@ -184,7 +190,12 @@ struct ToolItem: Codable, Identifiable, Equatable, Hashable {
             return type.defaultIcon
 
         case .webLink:
-            // 网页使用默认图标，后续可扩展支持 favicon
+            // 优先使用自定义图标
+            if let data = iconData, let customIcon = NSImage(data: data) {
+                customIcon.size = NSSize(width: 32, height: 32)
+                return customIcon
+            }
+            // 使用默认图标
             let icon = type.defaultIcon
             icon.size = NSSize(width: 32, height: 32)
             return icon

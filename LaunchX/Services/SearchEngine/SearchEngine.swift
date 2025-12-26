@@ -118,9 +118,73 @@ final class SearchEngine: ObservableObject {
         // 优先使用新的 ToolsConfig
         let toolsConfig = ToolsConfig.load()
         if !toolsConfig.tools.isEmpty {
-            let aliasMap = toolsConfig.aliasMap()
-            memoryIndex.setAliasMap(aliasMap)
-            print("SearchEngine: Loaded \(aliasMap.count) aliases from ToolsConfig")
+            // 构建带工具信息的别名映射（仅有别名的工具）
+            var aliasTools: [String: MemoryIndex.AliasToolInfo] = [:]
+            // 构建所有工具列表（用于名称搜索，包括没有别名的）
+            var allToolsList: [MemoryIndex.AliasToolInfo] = []
+
+            for tool in toolsConfig.enabledTools {
+                let hasAlias = tool.alias != nil && !tool.alias!.isEmpty
+
+                switch tool.type {
+                case .app:
+                    if let path = tool.path {
+                        let info = MemoryIndex.AliasToolInfo(
+                            name: tool.name,
+                            path: path,
+                            isWebLink: false
+                        )
+                        if hasAlias {
+                            aliasTools[tool.alias!] = info
+                        }
+                        // 应用类型不需要加入 allToolsList，因为已经在 apps 中
+                    }
+                case .webLink:
+                    if let url = tool.url {
+                        let info = MemoryIndex.AliasToolInfo(
+                            name: tool.name,
+                            path: url,
+                            isWebLink: true
+                        )
+                        if hasAlias {
+                            aliasTools[tool.alias!] = info
+                        }
+                        // 网页直达需要加入列表以支持名称搜索
+                        allToolsList.append(info)
+                    }
+                case .utility:
+                    if let identifier = tool.extensionIdentifier {
+                        let info = MemoryIndex.AliasToolInfo(
+                            name: tool.name,
+                            path: identifier,
+                            isWebLink: false
+                        )
+                        if hasAlias {
+                            aliasTools[tool.alias!] = info
+                        }
+                        allToolsList.append(info)
+                    }
+                case .systemCommand:
+                    if let command = tool.command {
+                        let info = MemoryIndex.AliasToolInfo(
+                            name: tool.name,
+                            path: command,
+                            isWebLink: false
+                        )
+                        if hasAlias {
+                            aliasTools[tool.alias!] = info
+                        }
+                        allToolsList.append(info)
+                    }
+                }
+            }
+
+            memoryIndex.setAliasMapWithTools(aliasTools)
+            // 设置所有工具列表（用于名称搜索）
+            memoryIndex.setToolsList(allToolsList)
+            print(
+                "SearchEngine: Loaded \(aliasTools.count) aliases, \(allToolsList.count) tools from ToolsConfig"
+            )
             return
         }
 

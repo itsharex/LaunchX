@@ -695,6 +695,8 @@ struct WebLinkEditorSheet: View {
     @State private var url: String = ""
     @State private var alias: String = ""
     @State private var urlError: String?
+    @State private var iconData: Data?
+    @State private var iconError: String?
 
     private var isEditing: Bool {
         existingTool != nil
@@ -704,46 +706,119 @@ struct WebLinkEditorSheet: View {
         !name.isEmpty && !url.isEmpty && isValidURL(url)
     }
 
+    /// 当前显示的图标
+    private var displayIcon: NSImage {
+        if let data = iconData, let image = NSImage(data: data) {
+            image.size = NSSize(width: 48, height: 48)
+            return image
+        }
+        let defaultIcon = NSImage(systemSymbolName: "globe", accessibilityDescription: nil) ?? NSImage()
+        defaultIcon.size = NSSize(width: 48, height: 48)
+        return defaultIcon
+    }
+
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 20) {
             // 标题
             Text(isEditing ? "编辑网页直达" : "添加网页直达")
-                .font(.headline)
+                .font(.title3)
+                .fontWeight(.semibold)
 
-            // 表单
-            VStack(alignment: .leading, spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("名称")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    TextField("例如：GitHub", text: $name)
-                        .textFieldStyle(.roundedBorder)
-                }
+            // 图标和基本信息
+            HStack(alignment: .top, spacing: 20) {
+                // 图标选择区域
+                VStack(spacing: 8) {
+                    // 图标预览
+                    Button(action: selectIcon) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color(nsColor: .controlBackgroundColor))
+                                .frame(width: 80, height: 80)
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("URL")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    TextField("https://github.com", text: $url)
-                        .textFieldStyle(.roundedBorder)
-                        .onChange(of: url) { _, newValue in
-                            validateURL(newValue)
+                            Image(nsImage: displayIcon)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 48, height: 48)
+
+                            // 编辑提示
+                            VStack {
+                                Spacer()
+                                HStack {
+                                    Spacer()
+                                    Image(systemName: "pencil.circle.fill")
+                                        .font(.system(size: 20))
+                                        .foregroundColor(.accentColor)
+                                        .background(Circle().fill(Color.white).frame(width: 16, height: 16))
+                                }
+                            }
+                            .frame(width: 80, height: 80)
+                            .padding(4)
                         }
-                    if let error = urlError {
+                    }
+                    .buttonStyle(.plain)
+                    .help("点击选择图标")
+
+                    // 清除图标按钮
+                    if iconData != nil {
+                        Button("移除图标") {
+                            iconData = nil
+                        }
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    }
+
+                    if let error = iconError {
                         Text(error)
                             .font(.caption)
                             .foregroundColor(.red)
+                            .frame(width: 80)
+                            .multilineTextAlignment(.center)
                     }
                 }
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("别名（可选）")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    TextField("例如：gh", text: $alias)
-                        .textFieldStyle(.roundedBorder)
+                // 表单字段
+                VStack(alignment: .leading, spacing: 14) {
+                    // 名称
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("名称")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        TextField("例如：GitHub", text: $name)
+                            .textFieldStyle(.roundedBorder)
+                    }
+
+                    // URL
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("URL")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        TextField("https://github.com", text: $url)
+                            .textFieldStyle(.roundedBorder)
+                            .onChange(of: url) { _, newValue in
+                                validateURL(newValue)
+                            }
+                        if let error = urlError {
+                            Text(error)
+                                .font(.caption)
+                                .foregroundColor(.red)
+                        }
+                    }
+
+                    // 别名
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("别名（可选）")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        TextField("例如：gh", text: $alias)
+                            .textFieldStyle(.roundedBorder)
+                    }
                 }
             }
+
+            // 图标说明
+            Text("支持 PNG、JPG 格式，建议使用 128×128 像素的正方形图片，最大 500KB")
+                .font(.caption)
+                .foregroundColor(.secondary)
 
             Divider()
 
@@ -763,16 +838,93 @@ struct WebLinkEditorSheet: View {
                 .disabled(!isValid)
             }
         }
-        .padding(20)
-        .frame(width: 320)
+        .padding(24)
+        .frame(width: 420)
         .onAppear {
             if let tool = existingTool {
                 name = tool.name
                 url = tool.url ?? ""
                 alias = tool.alias ?? ""
+                iconData = tool.iconData
             }
         }
     }
+
+    // MARK: - 图标选择
+
+    private func selectIcon() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+        panel.allowedContentTypes = [.png, .jpeg]
+        panel.message = "选择图标图片（PNG 或 JPG，最大 500KB）"
+        panel.prompt = "选择"
+
+        if panel.runModal() == .OK, let url = panel.url {
+            loadIcon(from: url)
+        }
+    }
+
+    private func loadIcon(from url: URL) {
+        iconError = nil
+
+        do {
+            let data = try Data(contentsOf: url)
+
+            // 检查文件大小（最大 500KB）
+            if data.count > 500 * 1024 {
+                iconError = "图片过大，请选择小于 500KB 的图片"
+                return
+            }
+
+            // 验证是否为有效图片
+            guard let image = NSImage(data: data) else {
+                iconError = "无法读取图片"
+                return
+            }
+
+            // 调整图片大小并转换为 PNG
+            let resizedData = resizeAndConvertToPNG(image: image, maxSize: 128)
+            iconData = resizedData
+
+        } catch {
+            iconError = "读取文件失败"
+        }
+    }
+
+    /// 调整图片大小并转换为 PNG 格式
+    private func resizeAndConvertToPNG(image: NSImage, maxSize: CGFloat) -> Data? {
+        let originalSize = image.size
+
+        // 计算缩放后的尺寸（保持宽高比）
+        var newSize = originalSize
+        if originalSize.width > maxSize || originalSize.height > maxSize {
+            let ratio = min(maxSize / originalSize.width, maxSize / originalSize.height)
+            newSize = NSSize(width: originalSize.width * ratio, height: originalSize.height * ratio)
+        }
+
+        // 创建新的图片
+        let newImage = NSImage(size: newSize)
+        newImage.lockFocus()
+        NSGraphicsContext.current?.imageInterpolation = .high
+        image.draw(in: NSRect(origin: .zero, size: newSize),
+                   from: NSRect(origin: .zero, size: originalSize),
+                   operation: .copy,
+                   fraction: 1.0)
+        newImage.unlockFocus()
+
+        // 转换为 PNG 数据
+        guard let tiffData = newImage.tiffRepresentation,
+              let bitmap = NSBitmapImageRep(data: tiffData),
+              let pngData = bitmap.representation(using: .png, properties: [:]) else {
+            return nil
+        }
+
+        return pngData
+    }
+
+    // MARK: - URL 验证
 
     private func validateURL(_ urlString: String) {
         if urlString.isEmpty {
@@ -780,7 +932,6 @@ struct WebLinkEditorSheet: View {
             return
         }
 
-        // 自动添加 https:// 前缀
         var normalizedURL = urlString
         if !normalizedURL.hasPrefix("http://") && !normalizedURL.hasPrefix("https://") {
             normalizedURL = "https://" + normalizedURL
@@ -801,8 +952,9 @@ struct WebLinkEditorSheet: View {
         return URL(string: normalizedURL) != nil
     }
 
+    // MARK: - 保存
+
     private func save() {
-        // 标准化 URL
         var normalizedURL = url
         if !normalizedURL.hasPrefix("http://") && !normalizedURL.hasPrefix("https://") {
             normalizedURL = "https://" + normalizedURL
@@ -814,9 +966,14 @@ struct WebLinkEditorSheet: View {
             tool.name = name
             tool.url = normalizedURL
             tool.alias = alias.isEmpty ? nil : alias
+            tool.iconData = iconData
         } else {
             tool = ToolItem.webLink(
-                name: name, url: normalizedURL, alias: alias.isEmpty ? nil : alias)
+                name: name,
+                url: normalizedURL,
+                alias: alias.isEmpty ? nil : alias,
+                iconData: iconData
+            )
         }
 
         onSave(tool)
