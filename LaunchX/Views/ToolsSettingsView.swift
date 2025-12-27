@@ -727,6 +727,8 @@ struct WebLinkEditorSheet: View {
     @State private var urlError: String?
     @State private var iconData: Data?
     @State private var iconError: String?
+    @State private var isFetchingIcon: Bool = false  // 是否正在获取图标
+    @FocusState private var isUrlFieldFocused: Bool  // URL 输入框焦点状态
 
     private var isEditing: Bool {
         existingTool != nil
@@ -771,10 +773,15 @@ struct WebLinkEditorSheet: View {
                                 .fill(Color(nsColor: .controlBackgroundColor))
                                 .frame(width: 80, height: 80)
 
-                            Image(nsImage: displayIcon)
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(width: 48, height: 48)
+                            if isFetchingIcon {
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                            } else {
+                                Image(nsImage: displayIcon)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(width: 48, height: 48)
+                            }
 
                             // 编辑提示
                             VStack {
@@ -794,6 +801,7 @@ struct WebLinkEditorSheet: View {
                     }
                     .buttonStyle(.plain)
                     .help("点击选择图标")
+                    .disabled(isFetchingIcon)
 
                     // 清除图标按钮
                     if iconData != nil {
@@ -831,8 +839,21 @@ struct WebLinkEditorSheet: View {
                             .foregroundColor(.secondary)
                         TextField("https://github.com/search?q={query}", text: $url)
                             .textFieldStyle(.roundedBorder)
+                            .focused($isUrlFieldFocused)
                             .onChange(of: url) { _, newValue in
                                 validateURL(newValue)
+                            }
+                            .onChange(of: isUrlFieldFocused) { _, isFocused in
+                                // 失去焦点时尝试获取图标
+                                if !isFocused && iconData == nil {
+                                    fetchFaviconIfNeeded()
+                                }
+                            }
+                            .onSubmit {
+                                // 回车时尝试获取图标
+                                if iconData == nil {
+                                    fetchFaviconIfNeeded()
+                                }
                             }
                         if let error = urlError {
                             Text(error)
@@ -996,6 +1017,82 @@ struct WebLinkEditorSheet: View {
             normalizedURL = "https://" + normalizedURL
         }
         return URL(string: normalizedURL) != nil
+    }
+
+    // MARK: - 自动获取网站图标
+
+    private func fetchFaviconIfNeeded() {
+        guard !url.isEmpty, isValidURL(url) else { return }
+        guard !isFetchingIcon else { return }
+
+        // 规范化 URL
+        var normalizedURL = url
+        if !normalizedURL.hasPrefix("http://") && !normalizedURL.hasPrefix("https://") {
+            normalizedURL = "https://" + normalizedURL
+        }
+
+        // 提取域名
+        guard let parsedURL = URL(string: normalizedURL),
+            let host = parsedURL.host
+        else { return }
+
+        isFetchingIcon = true
+        iconError = nil
+
+        // 尝试多种 favicon 获取方式
+        Task {
+            if let data = await fetchFavicon(for: host) {
+                await MainActor.run {
+                    self.iconData = data
+                    self.isFetchingIcon = false
+                }
+            } else {
+                await MainActor.run {
+                    self.isFetchingIcon = false
+                    // 静默失败，不显示错误
+                }
+            }
+        }
+    }
+
+    private func fetchFavicon(for host: String) async -> Data? {
+        // 尝试的 favicon URL 列表（按优先级排序）
+        let faviconURLs = [
+            "https://\(host)/apple-touch-icon.png",
+            "https://\(host)/apple-touch-icon-precomposed.png",
+            "https://\(host)/favicon-32x32.png",
+            "https://\(host)/favicon-16x16.png",
+            "https://\(host)/favicon.png",
+            "https://\(host)/favicon.ico",
+            "https://www.google.com/s2/favicons?domain=\(host)&sz=128",  // Google favicon 服务
+        ]
+
+        for urlString in faviconURLs {
+            guard let url = URL(string: urlString) else { continue }
+
+            do {
+                let (data, response) = try await URLSession.shared.data(from: url)
+
+                // 检查响应状态码
+                if let httpResponse = response as? HTTPURLResponse,
+                    httpResponse.statusCode == 200
+                {
+                    // 验证是否为有效图片
+                    if let image = NSImage(data: data), image.isValid {
+                        // 检查图片大小（至少 16x16）
+                        if image.size.width >= 16 && image.size.height >= 16 {
+                            print("[WebLinkEditor] Favicon fetched from: \(urlString)")
+                            return data
+                        }
+                    }
+                }
+            } catch {
+                // 继续尝试下一个 URL
+                continue
+            }
+        }
+
+        return nil
     }
 
     // MARK: - 保存
