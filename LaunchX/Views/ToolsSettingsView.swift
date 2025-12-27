@@ -438,8 +438,8 @@ struct ToolItemRow: View {
                 )
             }
 
-            // 进入扩展快捷键（仅 IDE 显示）
-            if tool.isIDE {
+            // 进入扩展快捷键（IDE 或支持 query 的网页直达显示）
+            if tool.isIDE || tool.supportsQueryExtension {
                 ToolHotKeyButton(
                     hotKey: tool.extensionHotKey,
                     onTap: { showExtensionHotKeyPopover = true }

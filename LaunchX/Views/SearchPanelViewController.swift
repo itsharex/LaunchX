@@ -118,6 +118,14 @@ class SearchPanelViewController: NSViewController {
             name: .enterIDEModeDirectly,
             object: nil
         )
+
+        // 监听直接进入网页直达 Query 模式的通知（由快捷键触发）
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleEnterWebLinkQueryModeDirectly(_:)),
+            name: .enterWebLinkQueryModeDirectly,
+            object: nil
+        )
     }
 
     /// 处理直接进入 IDE 模式的通知
@@ -175,6 +183,59 @@ class SearchPanelViewController: NSViewController {
         updateVisibility()
 
         print("SearchPanelViewController: IDE mode setup complete, results count=\(results.count)")
+    }
+
+    /// 处理直接进入网页直达 Query 模式的通知
+    @objc private func handleEnterWebLinkQueryModeDirectly(_ notification: Notification) {
+        print("SearchPanelViewController: handleEnterWebLinkQueryModeDirectly called")
+
+        guard let userInfo = notification.userInfo,
+            let tool = userInfo["tool"] as? ToolItem
+        else {
+            print("SearchPanelViewController: Invalid notification userInfo for WebLink query mode")
+            return
+        }
+
+        print("SearchPanelViewController: WebLink tool=\(tool.name)")
+
+        // 创建一个 SearchResult 来表示网页直达
+        var icon: NSImage
+        if let iconData = tool.iconData, let customIcon = NSImage(data: iconData) {
+            customIcon.size = NSSize(width: 32, height: 32)
+            icon = customIcon
+        } else {
+            icon =
+                NSImage(systemSymbolName: "globe", accessibilityDescription: "Web Link")
+                ?? NSImage()
+            icon.size = NSSize(width: 32, height: 32)
+        }
+
+        let webLinkResult = SearchResult(
+            name: tool.name,
+            path: tool.url ?? "",
+            icon: icon,
+            isDirectory: false,
+            isWebLink: true,
+            supportsQueryExtension: true,
+            defaultUrl: tool.defaultUrl
+        )
+
+        // 进入网页直达 Query 模式
+        isInWebLinkQueryMode = true
+        currentWebLinkResult = webLinkResult
+
+        // 更新 UI
+        updateWebLinkQueryModeUI()
+
+        // 清空结果列表
+        results = []
+        selectedIndex = 0
+        searchField.stringValue = ""
+        setPlaceholder("请输入关键词搜索...")
+        tableView.reloadData()
+        updateVisibility()
+
+        print("SearchPanelViewController: WebLink query mode setup complete")
     }
 
     // MARK: - Setup

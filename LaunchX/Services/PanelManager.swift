@@ -130,6 +130,21 @@ class PanelManager: NSObject, NSWindowDelegate {
         showPanel()
     }
 
+    /// 显示面板并直接进入网页直达 Query 模式
+    func showPanelInWebLinkQueryMode(tool: ToolItem) {
+        guard isSetup else { return }
+
+        // 发送通知让 SearchPanelViewController 进入网页直达 Query 模式
+        NotificationCenter.default.post(
+            name: .enterWebLinkQueryModeDirectly,
+            object: nil,
+            userInfo: ["tool": tool]
+        )
+
+        // 显示面板
+        showPanel()
+    }
+
     // MARK: - NSWindowDelegate
 
     func windowDidResignKey(_ notification: Notification) {

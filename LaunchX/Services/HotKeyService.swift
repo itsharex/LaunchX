@@ -539,8 +539,8 @@ class HotKeyService: ObservableObject {
                 )
             }
 
-            // 注册扩展快捷键（仅 IDE 应用）
-            if tool.isIDE, let extKey = tool.extensionHotKey {
+            // 注册扩展快捷键（IDE 应用或支持 query 的网页直达）
+            if tool.isIDE || tool.supportsQueryExtension, let extKey = tool.extensionHotKey {
                 registerCustomHotKey(
                     keyCode: extKey.keyCode,
                     modifiers: extKey.modifiers,

@@ -25,7 +25,7 @@ class ToolExecutor {
             executeApp(tool, isExtension: isExtension)
 
         case .webLink:
-            executeWebLink(tool)
+            executeWebLink(tool, isExtension: isExtension)
 
         case .utility:
             executeUtility(tool)
@@ -57,9 +57,16 @@ class ToolExecutor {
 
     // MARK: - 网页直达执行
 
-    private func executeWebLink(_ tool: ToolItem) {
+    private func executeWebLink(_ tool: ToolItem, isExtension: Bool) {
         guard let urlString = tool.url else {
             print("[ToolExecutor] WebLink tool '\(tool.name)' has no URL")
+            return
+        }
+
+        // 如果是扩展模式且支持 query，进入搜索面板的 query 输入模式
+        if isExtension && tool.supportsQueryExtension {
+            print("[ToolExecutor] Opening WebLink query mode for '\(tool.name)'")
+            PanelManager.shared.showPanelInWebLinkQueryMode(tool: tool)
             return
         }
 
