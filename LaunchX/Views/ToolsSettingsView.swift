@@ -74,18 +74,27 @@ struct ToolsSettingsView: View {
             } else {
                 ScrollView {
                     LazyVStack(spacing: 0) {
-                        // 自定义应用分类
-                        if !viewModel.appTools.isEmpty || !searchText.isEmpty {
-                            ToolSectionHeader(
-                                title: "自定义",
-                                count: viewModel.appTools.count,
-                                isExpanded: $viewModel.appExpanded,
-                                onAdd: {
-                                    viewModel.showFilePicker()
-                                }
-                            )
+                        // 自定义应用分类（始终显示）
+                        ToolSectionHeader(
+                            title: "自定义",
+                            count: viewModel.appTools.count,
+                            isExpanded: $viewModel.appExpanded,
+                            onAdd: {
+                                viewModel.showFilePicker()
+                            }
+                        )
 
-                            if viewModel.appExpanded {
+                        if viewModel.appExpanded {
+                            if filteredAppTools.isEmpty && searchText.isEmpty {
+                                // 空状态提示
+                                HStack {
+                                    Text("点击右侧 + 添加应用或文件夹")
+                                        .foregroundColor(.secondary)
+                                        .font(.caption)
+                                }
+                                .padding(.vertical, 12)
+                                .padding(.horizontal, 16)
+                            } else {
                                 ForEach(Array(filteredAppTools.enumerated()), id: \.element.id) {
                                     index, tool in
                                     ToolItemRow(
